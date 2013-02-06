@@ -69,7 +69,7 @@ private:
 
 	bool _InsertRootMenu(HMENU, HMENU, int);
 
-	bool _InsertMenu(HMENU, int location, int command, std::wstring);
+	bool _InsertMenu(HMENU, int location, int command, const wchar_t*);
 
 	ContextMenuUtil* _contextMenuUtil;
 

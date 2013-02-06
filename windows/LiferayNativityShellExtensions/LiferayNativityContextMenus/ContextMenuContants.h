@@ -22,4 +22,19 @@
 #define REGISTRY_VERSION_NUMBER			L"1.0"
 
 #define SEPARATOR						L"-"
-#define GET_ROOT_TEXT					L"getRootText"
+#define GET_HELP_TEXT					1
+#define GET_MENU_LIST					2
+#define GET_ROOT_TEXT					3
+#define PERFORM_ACTION					4
+
+#define ARGS							L"args"
+#define CLOSE_BRACE						L"}"
+#define CLOSE_BRACKET					L"]"
+#define CMD								L"cmd"
+#define COMMA							L","
+#define EQUAL_SIGN						L"="
+#define OPEN_BRACE						L"{"
+#define OPEN_BRACKET					L"["
+#define QUOTE							L"\""
+
+#define PORT							33003

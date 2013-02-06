@@ -28,7 +28,7 @@ extern HINSTANCE instanceHandle;
 LiferayNativityOverlay::LiferayNativityOverlay(): 
 	_referenceCount(1)
 {
-	_nativityJavaInterface = new NativityJavaInterface();
+	//_nativityJavaInterface = new NativityJavaInterface();
 }
 
 LiferayNativityOverlay::~LiferayNativityOverlay(void)
@@ -113,7 +113,9 @@ IFACEMETHODIMP LiferayNativityOverlay::GetOverlayInfo(
 
  bool LiferayNativityOverlay::_DoesFileNeedOverlay(const wchar_t* filePath)
 {	
-	bool displayOverlay = _nativityJavaInterface->IsDisplayOverlay(filePath);
+//	bool displayOverlay = _nativityJavaInterface->IsDisplayOverlay(filePath);
 
-	return displayOverlay;
+//	return displayOverlay;
+	
+	return false;
 }

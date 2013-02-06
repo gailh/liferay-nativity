@@ -21,89 +21,224 @@ using namespace std;
 
 ContextMenuUtil::ContextMenuUtil()
 {
-	_nativityJavaInterface = new NativityJavaInterface();
-	_selectedFiles = new std::list<std::wstring>;
+	_communicationSocket = new CommunicationSocket(PORT);
+	_selectedFiles = new std::list<const wchar_t*>;
 }
 
 ContextMenuUtil::~ContextMenuUtil(void)
 {
+	delete _communicationSocket;
 	_selectedFiles = 0;
 }
 
-int ContextMenuUtil::GetActionIndex(std::wstring command)
+bool ContextMenuUtil::AddFile(const wchar_t* file)
 {
-	list<wstring>::iterator commandIterator = _selectedFiles->begin();
+	_selectedFiles->push_front(file);
+	return true;
+}
+
+int ContextMenuUtil::GetActionIndex(const wchar_t* command)
+{
+	list<const wchar_t*>::iterator menuIterator = _menuList->begin();
 
 	int index = 0;
 
-	while(commandIterator != _selectedFiles->end()) 
+	while(menuIterator != _menuList->end()) 
 	{
-		wstring commandName = *commandIterator;
+		const wchar_t* menuName = *menuIterator;
 
-		if(commandName.compare(command) == 0)
+		if(menuName == command)
 		{
 			return index;
 		}
 
-		commandIterator++;
+		menuIterator++;
 		index++;
 	}
 
 	return -1;
 }
 
-wstring ContextMenuUtil::GetHelpText(int index)
+bool ContextMenuUtil::GetHelpText(int index, wstring& helpText)
 {
-	//Currently no help text, so use command text.
+	/*if(index >= _helpTextList->size())
+	{
+		return false;
+	}
 
-	return _GetCommandText(index);
+	helpText = _helpTextList[index];
+	*/
+	return true;
 }
 
-list<std::wstring>* ContextMenuUtil::GetMenus()
+bool ContextMenuUtil::GetMenus(std::list<std::wstring*> &menuList)
 {
+	//menuList = *_menuList;
+	return false;
 }
 
-wstring ContextMenuUtil::GetRootText()
+bool ContextMenuUtil::GetRootText(wstring& helpText)
 {
-	wstring rootMenu = _nativityJavaInterface->PerformQuery(GET_ROOT_TEXT);
+	//helpText = *_rootMenu;
 
-	return rootMenu;
+	return false;
 }
 
-wstring ContextMenuUtil::GetVerbText(int index)
+bool ContextMenuUtil::GetVerbText(int index, wstring& verbText)
 {
-	//Currently no verb text, so just using command text.
-
-	return _GetCommandText(index);
+	return _GetCommandText(index, verbText);
 }
 
 bool ContextMenuUtil::IsMenuNeeded(void)
 {  
-	if(_nativityJavaInterface->IsSyncFile(_selectedFiles))
+	if(_menuList->size() == 0)
 	{
-		return true;
+		return false;
 	}
-	
-	return false;
+
+	return true;
 }
 
 bool ContextMenuUtil::PerformAction(int index)
 {
-	return _nativityJavaInterface->PerformAction(index, _selectedFiles);
+	wstring command;
+	if(!_GetCommandText(index, command))
+	{
+		return false;
+	}
+
+	if(!_GenerateMessage(PERFORM_ACTION, command))
+	{
+		return false;
+	}
+
+	return true;
 }
 
-wstring ContextMenuUtil::_GetCommandText(int index)
+bool ContextMenuUtil::_GetCommandText(int index, wstring& commandText)
 {
 	if(index < _selectedFiles->size())
 	{
-		return L"";
+		return false;
 	}
 
-	list<wstring>::iterator commandIterator = _selectedFiles->begin();
+	list<const wchar_t*>::iterator commandIterator = _selectedFiles->begin();
 
     std::advance(commandIterator, index);
 
-	wstring commandName = *commandIterator;
+	commandText = *commandIterator;
 
-	return commandName;
+	return true;
+}
+
+bool ContextMenuUtil::_GenerateMessage(int command, std::wstring& message)
+{
+	//{cmd=1,args=["args","arg2","arg3"]}
+	message.append(OPEN_BRACE);
+	message.append(CMD);
+	message.append(EQUAL_SIGN);
+
+	/*wstring str_cmd = to_wstring(command);
+	message.append(str_cmd);*/
+
+	message.append(COMMA);
+	message.append(ARGS);
+	message.append(EQUAL_SIGN);
+	message.append(OPEN_BRACKET);
+
+	list<const wchar_t*>::iterator fileIterator = _selectedFiles->begin();
+
+	int index = 0;
+
+	while(fileIterator != _selectedFiles->end()) 
+	{
+		if(index > 0)
+		{
+			message.append(COMMA);
+		}
+
+		message.append(QUOTE);
+		message.append(*fileIterator);
+		message.append(QUOTE);
+
+		fileIterator++;
+		index++;
+	}
+
+	message.append(CLOSE_BRACKET);
+	message.append(CLOSE_BRACE);
+
+	return true;
+}
+
+bool ContextMenuUtil::_InitMenus()
+{
+	/*wstring getRootMessage;
+	if(!_GenerateMessage(GET_ROOT_TEXT, getRootMessage))
+	{
+		return false;
+	}
+
+	wstring getRootReceived;
+	if(!_communicationSocket->SendMessageReceiveResponse(getRootMessage.c_str(), getRootReceived))
+	{
+		return false;
+	}
+
+	if(!_ParseMessage(getRootReceived.c_str(), _rootMenu))
+	{
+		return false;
+	}
+
+	wstring getMenuMessage;
+	if(!_GenerateMessage(GET_MENU_LIST, getMenuMessage))
+	{
+		return false;
+	}
+
+	wstring getMenuReceived;
+	if(!_communicationSocket->SendMessageReceiveResponse(getMenuMessage.c_str(), getMenuReceived))
+	{
+		return false;
+	}
+
+	_menuList = new std::list<const wchar_t*>();
+
+	if(!_ParseMessageToList(getMenuReceived.c_str(), *_menuList))
+	{
+		return false;
+	}
+
+	wstring getHelpMessage;
+	if(!_GenerateMessage(GET_HELP_TEXT, getHelpMessage))
+	{
+		return false;
+	}
+
+	wstring getHelpReceived;
+	if(!_communicationSocket->SendMessageReceiveResponse(getHelpMessage.c_str(), getHelpReceived))
+	{
+		return false;
+	}
+
+	_helpTextList = new std::list<const wchar_t*>();
+
+	if(!_ParseMessageToList(getHelpReceived.c_str(), *_helpTextList))
+	{
+		return false;
+	}
+
+	return true;*/
+
+	return false;
+}
+
+bool ContextMenuUtil::_ParseMessage(const wchar_t*, std::wstring&)
+{
+	return false;
+}
+
+bool ContextMenuUtil::_ParseMessageToList(const wchar_t*, std::list<std::wstring*>&)
+{
+	return false;
 }

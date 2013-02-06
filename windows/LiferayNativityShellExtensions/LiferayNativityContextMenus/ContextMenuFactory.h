@@ -17,8 +17,7 @@
 
 #pragma once
 
-#include <unknwn.h>    
-#include <windows.h>
+#include "stdafx.h"
 
 class ContextMenuFactory : public IClassFactory
 {

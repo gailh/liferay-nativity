@@ -1,0 +1,6 @@
+﻿  Tester.cpp
+  MainTest.cpp
+  Generating Code...
+d:\newrepository\liferay-nativity\windows\liferaynativityshellextensions\nativitytest\tester.cpp(110): warning C4715: 'Tester::TestContextMenuUtil' : not all control paths return a value
+     Creating library D:\newrepository\liferay-nativity\windows\LiferayNativityShellExtensions\Debug\x64\NativityTest_x64.lib and object D:\newrepository\liferay-nativity\windows\LiferayNativityShellExtensions\Debug\x64\NativityTest_x64.exp
+  NativityTest.vcxproj -> D:\newrepository\liferay-nativity\windows\LiferayNativityShellExtensions\Debug\x64\NativityTest_x64.exe

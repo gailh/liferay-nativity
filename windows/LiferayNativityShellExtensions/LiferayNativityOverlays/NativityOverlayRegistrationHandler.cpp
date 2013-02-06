@@ -15,7 +15,7 @@
 #include "NativityOverlayRegistrationHandler.h"
 
 #include "OverlayContants.h"
-#include <Windows.h>
+#include <windows.h>
 
 HRESULT NativityOverlayRegistrationHandler::MakeRegistryEntries(
 	const CLSID& clsid, PWSTR friendlyName)

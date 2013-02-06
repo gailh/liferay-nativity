@@ -17,28 +17,26 @@
 
 #pragma once
 
-#include "NativityJavaInterface.h"
+#include "stdafx.h"
 
-#include <list>
-#include <string>
-#include <windows.h>
-
-class ContextMenuUtil
+class __declspec(dllexport) ContextMenuUtil
 {
 public:
 	ContextMenuUtil();
 
 	~ContextMenuUtil(void);
 
-	int GetActionIndex(std::wstring);
+	bool AddFile(const wchar_t*);
 
-	std::wstring GetHelpText(int);
+	int GetActionIndex(const wchar_t*);
 
-	std::list<std::wstring>* GetMenus();
+	bool GetHelpText(int, std::wstring&);
 
-	std::wstring GetRootText();
+	bool GetMenus(std::list<std::wstring*>&);
 
-	std::wstring GetVerbText(int);
+	bool GetRootText(std::wstring&);
+
+	bool GetVerbText(int, std::wstring&);
 
 	bool IsMenuNeeded(void);
 	
@@ -46,11 +44,27 @@ public:
 
 private:
 
-	std::wstring _GetCommandText(int);
+	bool _GetCommandText(int,std::wstring&);
 
-	NativityJavaInterface* _nativityJavaInterface;
+	bool _GenerateMessage(int, std::wstring&);
+
+	bool _InitMenus(); 
+
+	bool _ParseMessage(const wchar_t*, std::wstring&);
+
+	bool _ParseMessageToList(const wchar_t*, std::list<std::wstring*>&);
+
+	CommunicationSocket* _communicationSocket;
 	
-	std::list<std::wstring>* _selectedFiles;
+	std::list<const wchar_t*>* _helpTextList;
+
+	std::list<const wchar_t*>* _menuList;
+
+	const wchar_t* _rootMenu;
+
+	std::list<const wchar_t*>* _selectedFiles;
+
+	
 };
 
 #endif

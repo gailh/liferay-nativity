@@ -13,8 +13,8 @@
  */
 
 #include "NativityOverlayRegistrationHandler.h"
-#include "OKOverlayFactory.h"
-#include "Constants.h"
+//#include "OKOverlayFactory.h"
+//#include "Constants.h"
 
 #include <Guiddef.h>
 #include <windows.h>
@@ -68,13 +68,13 @@ STDAPI DllGetClassObject(REFCLSID rclsid, REFIID riid, void **ppv)
 		return hResult;
 	}
 
-    OKOverlayFactory* oKOverlayFactory = new OKOverlayFactory(szModule);
+//    OKOverlayFactory* oKOverlayFactory = new OKOverlayFactory(szModule);
 
-    if (oKOverlayFactory)
-    {
-		hResult = oKOverlayFactory->QueryInterface(riid, ppv);
-		oKOverlayFactory->Release();
-	}
+ //   if (oKOverlayFactory)
+ //   {
+	//	hResult = oKOverlayFactory->QueryInterface(riid, ppv);
+	//	oKOverlayFactory->Release();
+	//}
     return hResult;
 }
 
@@ -89,30 +89,30 @@ HRESULT _stdcall DllRegisterServer(void)
 {
 	HRESULT hResult = S_OK;
 
-	wchar_t szModule[MAX_PATH];
+	//wchar_t szModule[MAX_PATH];
 
-	if (GetModuleFileName(instanceHandle, szModule, ARRAYSIZE(szModule)) == 0)
-	{	
-		hResult = HRESULT_FROM_WIN32(GetLastError());
+	//if (GetModuleFileName(instanceHandle, szModule, ARRAYSIZE(szModule)) == 0)
+	//{	
+	//	hResult = HRESULT_FROM_WIN32(GetLastError());
 
-		return hResult;
-	}
+	//	return hResult;
+	//}
 
-	hResult = SyncOverlayRegistrationHandler::RegisterCOMObject(
-		szModule, CLSID_LiferaySyncOKOverlay);
+	//hResult = SyncOverlayRegistrationHandler::RegisterCOMObject(
+	//	szModule, CLSID_LiferaySyncOKOverlay);
 
-	if(!SUCCEEDED(hResult))
-	{
-		return hResult;
-	}
+	//if(!SUCCEEDED(hResult))
+	//{
+	//	return hResult;
+	//}
 
-	hResult = SyncOverlayRegistrationHandler::MakeRegistryEntries(
-		CLSID_LiferaySyncOKOverlay, DL_OK_OVERLAY_DLL);
+	//hResult = SyncOverlayRegistrationHandler::MakeRegistryEntries(
+	//	CLSID_LiferaySyncOKOverlay, DL_OK_OVERLAY_DLL);
 
-	if(!SUCCEEDED(hResult))
-	{
-		return hResult;
-	}
+	//if(!SUCCEEDED(hResult))
+	//{
+	//	return hResult;
+	//}
 
     return hResult;
 }
@@ -121,29 +121,29 @@ STDAPI DllUnregisterServer(void)
 {
     HRESULT hResult = S_OK;
 
-    wchar_t szModule[MAX_PATH];
-    
-	if (GetModuleFileNameW(instanceHandle, szModule, ARRAYSIZE(szModule)) == 0)
-    {
-        hResult = HRESULT_FROM_WIN32(GetLastError());
-        return hResult;
-    }
+ //   wchar_t szModule[MAX_PATH];
+ //   
+	//if (GetModuleFileNameW(instanceHandle, szModule, ARRAYSIZE(szModule)) == 0)
+ //   {
+ //       hResult = HRESULT_FROM_WIN32(GetLastError());
+ //       return hResult;
+ //   }
 
-	hResult =SyncOverlayRegistrationHandler::UnregisterCOMObject(
-		CLSID_LiferaySyncOKOverlay);
+	//hResult =SyncOverlayRegistrationHandler::UnregisterCOMObject(
+	//	CLSID_LiferaySyncOKOverlay);
 
-	if(!SUCCEEDED(hResult))
-	{
-		return hResult;
-	}
+	//if(!SUCCEEDED(hResult))
+	//{
+	//	return hResult;
+	//}
 
-	hResult = SyncOverlayRegistrationHandler::RemoveRegistryEntries(
-		DL_OK_OVERLAY_DLL);
-	
-	if (!SUCCEEDED(hResult))
-    {
-		return hResult;
-	}
+	//hResult = SyncOverlayRegistrationHandler::RemoveRegistryEntries(
+	//	DL_OK_OVERLAY_DLL);
+	//
+	//if (!SUCCEEDED(hResult))
+ //   {
+	//	return hResult;
+	//}
 
     return hResult;
 }

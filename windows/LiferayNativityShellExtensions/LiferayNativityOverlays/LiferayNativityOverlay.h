@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include "NativityJavaInterface.h"
+//#include "NativityJavaInterface.h"
 
 #include <shlobj.h>
 #include <string>
@@ -52,7 +52,7 @@ private:
 
     long _referenceCount;
 
-	NativityJavaInterface* _nativityJavaInterface;
+//	NativityJavaInterface* _nativityJavaInterface;
 
 };
 
