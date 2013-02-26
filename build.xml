@@ -1,11 +1,12 @@
 <?xml version="1.0"?>
 
-<project name="liferay-nativity" basedir="." default="compile">
-	<property name="application.name" value="Liferay Nativity" />
-
+<project name="liferay-nativity-java" basedir="." default="compile">
 	<property name="project.dir" value="." />
+	<property name="project.tmp.dir" value="${project.dir}/tmp" />
 
 	<property name="java.dir" value="${project.dir}/java" />
+
+	<property environment="env" />
 
 	<property file="${project.dir}/build.${user.name}.properties" />
 	<property file="${project.dir}/build.${env.COMPUTERNAME}.properties" />
@@ -23,12 +24,20 @@
 		<fileset dir="${portal.dir}/lib/portal" includes="*.jar" />
 	</path>
 
+
+	<path id="lib.classpath">
+		<fileset dir="${java.dir}/lib" includes="*.jar" />
+	</path>
+
 	<target name="build-jar" depends="compile">
-		<jar destfile="${project.tmp.dir}/jar/${package.name}.jar">
+		<delete dir="${java.dir}/dist" />
+
+		<jar destfile="${java.dir}/dist/liferay-nativity-${package.version}.jar" filesetmanifest="mergewithoutmain">
 			<fileset dir="${java.dir}/classes" />
+			<zipgroupfileset dir="${java.dir}/lib" excludes="META-INF/*.SF" includes="*.jar" />
 		</jar>
 	</target>
-	
+
 	<target name="clean">
 		<delete dir="${java.dir}/classes" />
 		<delete dir="dist" />
@@ -36,22 +45,33 @@
 	</target>
 
 	<target name="compile">
+		<antcall target="compile-java">
+			<param name="javac.classpathref" value="lib.classpath" />
+			<param name="javac.destdir" value="${java.dir}/classes" />
+			<param name="javac.srcdir" value="${java.dir}/src" />
+		</antcall>
+	</target>
+
+	<target name="compile-java">
 		<mkdir dir="${java.dir}/classes" />
 
+		<copy todir="${javac.destdir}">
+			<fileset dir="${javac.srcdir}" excludes="**/*.java" />
+		</copy>
+
 		<javac
+			classpathref="${javac.classpathref}"
 			compiler="${javac.compiler}"
 			debug="${javac.debug}"
 			deprecation="${javac.deprecation}"
-			destdir="${java.dir}/classes"
+			destdir="${javac.destdir}"
 			encoding="${javac.encoding}"
 			includeAntRuntime="false"
 			nowarn="${javac.nowarn}"
-			srcdir="${java.dir}/src"
+			srcdir="${javac.srcdir}"
 		/>
 
-		<copy todir="${java.dir}/classes">
-			<fileset dir="${java.dir}/src" excludes="**/*.java" />
-		</copy>
+		<echo file="${javac.destdir}/.touch"></echo>
 	</target>
 
 	<target name="format-source">
@@ -67,5 +87,4 @@
 
 		<delete file="ServiceBuilder.temp" />
 	</target>
-
 </project>

@@ -12,7 +12,11 @@
  * details.
  */
 
-package com.liferay.nativity.mac;
+package com.liferay.nativity.plugincontrol.mac;
+
+import com.liferay.nativity.listeners.MenuItemListener;
+import com.liferay.nativity.listeners.SocketCloseListener;
+import com.liferay.nativity.plugincontrol.NativityPluginControl;
 
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
@@ -23,16 +27,19 @@ import java.net.Socket;
 
 import java.util.Map.Entry;
 import java.util.Map;
-public class PluginControl {
 
-	/**
-	 * Initialize connection with native service
-	 *
-	 * @return true if connection is successful
-	 */
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * @author Dennis Ju
+ */
+public class AppleNativityPluginControlImpl extends NativityPluginControl {
+
+	@Override
 	public boolean connect() {
 		try {
-			_serviceSocket = new Socket("127.0.0.1", 33001);
+			_serviceSocket = new Socket("127.0.0.1", _serviceSocketPort);
 
 			_serviceBufferedReader = new BufferedReader(
 				new InputStreamReader(_serviceSocket.getInputStream()));
@@ -40,7 +47,7 @@ public class PluginControl {
 			_serviceOutputStream = new DataOutputStream(
 				_serviceSocket.getOutputStream());
 
-			_callbackSocket = new Socket("127.0.0.1", 33002);
+			_callbackSocket = new Socket("127.0.0.1", _callbackSocketPort);
 
 			_callbackBufferedReader = new BufferedReader(
 				new InputStreamReader(_callbackSocket.getInputStream()));
@@ -49,6 +56,7 @@ public class PluginControl {
 				_callbackSocket.getOutputStream());
 
 			_callbackThread = new ReadThread(this);
+
 			_callbackThread.start();
 		}
 		catch (IOException e) {
@@ -58,35 +66,63 @@ public class PluginControl {
 		return true;
 	}
 
-	/**
-	 * Disconnects from plugin service
-	 */
-	public void disconnect() {
+	@Override
+	public boolean disconnect() {
 		try {
 			_serviceSocket.close();
 		}
 		catch (IOException e) {
+			return false;
 		}
+
+		return true;
 	}
 
-	/**
-	 * Enable/Disable icon overlay feature
-	 *
-	 * @param enable pass true is overlay feature should be enabled
-	 */
+	@Override
 	public void enableOverlays(boolean enable) {
 		String command = "enableOverlays:" + (enable ? "1" : "0");
 
 		_sendCommand(command);
 	}
 
-	/**
-	 * Register icon in the service
-	 *
-	 * @param path to icon file
-	 *
-	 * @return registered icon id or 0 in case error
-	 */
+	public int getIconForFile(String fileName) {
+		return 0;
+	}
+
+	@Override
+	public boolean pluginRunning() {
+		boolean running = false;
+
+		try {
+			String grepCommand =
+				"ps -e | grep com.liferay.FinderPluginHelper | grep -v grep";
+
+			String[] cmd = { "/bin/sh", "-c", grepCommand };
+
+			Process process = Runtime.getRuntime().exec(cmd);
+
+			BufferedReader bufferedReader = new BufferedReader(
+				new InputStreamReader(process.getInputStream()));
+
+			while (bufferedReader.readLine() != null) {
+				running = true;
+			}
+
+			bufferedReader.close();
+		}
+		catch (Exception e) {
+		}
+
+		_logger.trace("Finder plugin helper running: {}", running);
+
+		return running;
+	}
+
+	public void refreshIconForFile(String fileName) {
+
+	}
+
+	@Override
 	public int registerIcon(String path) {
 		String command = "registerIcon:" + path;
 
@@ -95,23 +131,15 @@ public class PluginControl {
 		return Integer.parseInt(reply);
 	}
 
-	/**
-	 * Remove icon overlay from file (previously set by setIconForFile)
-	 *
-	 * @param name of file
-	 */
+	@Override
 	public void removeFileIcon(String fileName) {
 		String command = "removeFileIcon:" + fileName;
 
 		_sendCommand(command);
 	}
 
-	/**
-	 * Remove icon overlays from files (previously set by setIconForFile)
-	 *
-	 * @param array of files
-	 */
-	public void removeFileIcon(String[] fileNames) {
+	@Override
+	public void removeFileIcons(String[] fileNames) {
 		StringBuilder sb = new StringBuilder();
 
 		sb.append("removeFileIcons");
@@ -124,35 +152,21 @@ public class PluginControl {
 		_sendCommand(sb.toString());
 	}
 
-	/**
-	 * Set title of root context menu item, all other items will be added as
-	 * children of it
-	 *
-	 * @param new title of item
-	 */
+	@Override
 	public void setContextMenuTitle(String title) {
 		String command = "setMenuTitle:" + title;
 
 		_sendCommand(command);
 	}
 
-	/**
-	 * Associate icon with fileName
-	 *
-	 * @param target file name
-	 * @param id of icon that should be associated with file
-	 */
+	@Override
 	public void setIconForFile(String fileName, int iconId) {
 		String command = "setFileIcon:" + fileName + ":" + iconId;
 
 		_sendCommand(command);
 	}
 
-	/**
-	 * Associate icons with multiple fileNames.
-	 *
-	 * @param map containing icon id values keyed by file name
-	 */
+	@Override
 	public void setIconsForFiles(Map<String, Integer> fileIconsMap) {
 		StringBuilder sb = new StringBuilder();
 
@@ -184,39 +198,76 @@ public class PluginControl {
 		}
 	}
 
-	/**
-	 * Unregister icon in the service
-	 *
-	 * @param id of icon previously registered by registerIcon method
-	 */
+	public void setMenuItemListener(MenuItemListener menuItemListener) {
+		_menuItemListener = menuItemListener;
+	}
+
+	public void setSocketCloseListener(
+		SocketCloseListener socketCloseListener) {
+
+		_socketCloseListener = socketCloseListener;
+	}
+
+	@Override
+	public boolean startPlugin(String path) throws Exception {
+		_logger.trace("Starting Finder plugin helper");
+
+		Process process = Runtime.getRuntime().exec(path);
+
+		BufferedReader inputBufferedReader = new BufferedReader(
+			new InputStreamReader(process.getInputStream()));
+
+		BufferedReader errorBufferedReader = new BufferedReader(
+			new InputStreamReader(process.getErrorStream()));
+
+		String input = inputBufferedReader.readLine();
+
+		while (input != null) {
+			input = inputBufferedReader.readLine();
+		}
+
+		inputBufferedReader.close();
+
+		String error = errorBufferedReader.readLine();
+
+		if (error != null) {
+			errorBufferedReader.close();
+
+			_logger.trace(
+				"Finder plugin helper failed to start. Error: {}", error);
+
+			return false;
+		}
+
+		errorBufferedReader.close();
+
+		process.waitFor();
+
+		_logger.trace("Finder plugin helper successfully started");
+
+		return true;
+	}
+
+	@Override
 	public void unregisterIcon(int id) {
 		String command = "unregisterIcon:" + id;
 
 		_sendCommand(command);
 	}
 
-	/**
-	 * Callback method called by native plugin when context menu executed on one
-	 * or more files. User code can override this method to add a number of
-	 * additional items to context menu.
-	 *
-	 * @param array of file names on which context menu executed
-	 *
-	 * @return array of menu items that should be added to context menu, or null
-	 *         if additional context menu not needed
-	 */
-	protected String[] getMenuItems(String[] files) {
-		return null;
-	}
+	protected class ReadThread extends Thread {
 
-	/**
-	 * Callback method that executes when user selects custom menu item
-	 *
-	 * @param index of menu item (index in the array returned by previous
-	 *        getMenuItems call)
-	 * @param files array on which context menu item executed
-	 */
-	protected void menuItemExecuted(int index, String[] files) {
+		public ReadThread(AppleNativityPluginControlImpl pluginControl) {
+			_pluginControl = pluginControl;
+		}
+
+		@Override
+		public void run() {
+			_pluginControl._doCallbackLoop();
+		}
+
+		private AppleNativityPluginControlImpl _pluginControl;
+
 	}
 
 	private void _doCallbackLoop() {
@@ -224,19 +275,31 @@ public class PluginControl {
 			try {
 				String data = _callbackBufferedReader.readLine();
 
-				if (data.startsWith("menuQuery:")) {
+				if (data == null) {
+					_callbackSocket.close();
+
+					_socketCloseListener.onSocketClose();
+
+					break;
+				}
+
+				if (data.startsWith("menuQuery:") &&
+					(_menuItemListener != null)) {
+
 					String currentFiles = data.substring(10, data.length());
 
 					_currentFiles = currentFiles.split(":");
 
-					String[] items = getMenuItems(_currentFiles);
+					String[] items = _menuItemListener.onPopulateMenuItems(
+						_currentFiles);
 
 					String itemsStr = new String();
 
 					if (items != null) {
 						for (int i=0; i<items.length; ++i) {
-							if (i > 0)
+							if (i > 0) {
 								itemsStr += ":";
+							}
 
 							itemsStr += items[i];
 						}
@@ -245,10 +308,18 @@ public class PluginControl {
 					_callbackOutputStream.writeBytes(itemsStr + "\r\n");
 				}
 
-				if (data.startsWith("menuExec:")) {
-					menuItemExecuted(
-						Integer.parseInt(data.substring(9, data.length())),
-						_currentFiles);
+				if (data.startsWith("menuExec:") &&
+					(_menuItemListener != null)) {
+
+					int titleIndex = data.indexOf(":", 9);
+
+					int menuIndex = Integer.parseInt(
+						data.substring(9, titleIndex));
+
+					String menuText = data.substring(titleIndex + 1);
+
+					_menuItemListener.onExecuteMenuItem(
+						menuIndex, menuText, _currentFiles);
 				}
 			}
 			catch (IOException e) {
@@ -264,6 +335,12 @@ public class PluginControl {
 
 			String reply = _serviceBufferedReader.readLine();
 
+			if (reply == null) {
+				_serviceSocket.close();
+
+				_socketCloseListener.onSocketClose();
+			}
+
 			return reply;
 		}
 		catch (IOException e) {
@@ -271,37 +348,24 @@ public class PluginControl {
 		}
 	}
 
+	private static int _callbackSocketPort = 33002;
+
+	private static Logger _logger = LoggerFactory.getLogger(
+		AppleNativityPluginControlImpl.class.getName());
+
 	private static long _messageBufferSize = 500;
 
+	private static int _serviceSocketPort = 33001;
+
 	private BufferedReader _callbackBufferedReader;
-
 	private DataOutputStream _callbackOutputStream;
-
 	private Socket _callbackSocket;
-
 	private ReadThread _callbackThread;
-
 	private String[] _currentFiles;
-
+	private MenuItemListener _menuItemListener;
 	private BufferedReader _serviceBufferedReader;
-
 	private DataOutputStream _serviceOutputStream;
-
 	private Socket _serviceSocket;
-
-	private class ReadThread extends Thread {
-
-		public ReadThread(PluginControl pluginControl) {
-			_pluginControl = pluginControl;
-		}
-
-		@Override
-		public void run() {
-			_pluginControl._doCallbackLoop();
-		}
-
-		private PluginControl _pluginControl;
-
-	}
+	private SocketCloseListener _socketCloseListener;
 
 }
