@@ -106,7 +106,6 @@ Cleanup:
     }
 }
 
-
 //
 //   FUNCTION: UninstallService
 //

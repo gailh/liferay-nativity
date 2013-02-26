@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-2013 Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -19,8 +19,6 @@
 
 #pragma warning (disable : 4251)
 
-#include <winsock2.h>
-#include <Ws2tcpip.h>
 #include <string>
 
 class __declspec(dllexport) CommunicationSocket
@@ -30,18 +28,12 @@ public:
 
 	~CommunicationSocket();
 
-	bool ReceiveResponseOnly(std::wstring &message);
+	bool ReceiveResponseOnly(std::wstring* message);
 
-	bool SendMessageOnly(const wchar_t *message);
-
-	bool SendMessageReceiveResponse(const wchar_t* message, std::wstring& response);
+	bool SendMessageReceiveResponse(const wchar_t* message, std::wstring* response);
 	
-private:
-	bool Close();
-
-	bool Initialize();
-	
-	SOCKET _clientSocket;
+private:	
+	bool ConvertData(wchar_t* buf, int bytesRead, char* rec_buf);
 
 	int _port;
 };

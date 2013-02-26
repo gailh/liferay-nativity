@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-2013 Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -20,9 +20,7 @@
 
 #include "stdafx.h"
 #include "SampleService.h"
-#include "ReceiveSocketClient.h"
-#include "SendSocketClient.h"
-#include "CommunicatonProcessor.h"
+#include "ServiceWorker.h"
 
 class LiferayNativityExtensionService : public CServiceBase
 {
@@ -43,14 +41,20 @@ protected:
     
 	virtual void OnStop();
 
+
     void ServiceWorkerThread(void);
 
 private:
-	CommunicatonProcessor* _communicationProcessor;
-    BOOL stopped;
+
+	BOOL stopped;
     HANDLE stoppedEvent;
-	ReceiveSocketClient* _receiveSocketClient;
-	SendSocketClient* _sendSocketClient;
+	
+	CommunicationSocket* _receiveFromPlugInSocketClient;
+	CommunicationSocket* _sendToPlugInSocketClient;
+	ServiceWorker* _serviceWorker;
+
+	const wchar_t* _title;
+	bool _overlays;
 };
 
 #endif

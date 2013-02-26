@@ -3,6 +3,5 @@
 #include "CommunicationSocket.h"
 #include <unknwn.h>    
 #include <windows.h>
-#include <list>
 #include <string>
-
+#include <vector>

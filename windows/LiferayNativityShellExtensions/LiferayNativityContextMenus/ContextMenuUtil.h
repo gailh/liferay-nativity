@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-2013 Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -26,45 +26,43 @@ public:
 
 	~ContextMenuUtil(void);
 
-	bool AddFile(const wchar_t*);
+	bool AddFile(std::wstring*);
 
-	int GetActionIndex(const wchar_t*);
+	int GetActionIndex(std::wstring*);
 
-	bool GetHelpText(int, std::wstring&);
+	bool GetHelpText(unsigned int, std::wstring*);
 
-	bool GetMenus(std::list<std::wstring*>&);
+	bool GetMenus(std::vector<std::wstring*>*);
 
-	bool GetRootText(std::wstring&);
+	bool GetRootText(std::wstring*);
 
 	bool GetVerbText(int, std::wstring&);
 
 	bool IsMenuNeeded(void);
+
+	bool InitMenus(void); 
 	
 	bool PerformAction(int);
 
 private:
+	bool _GetMenuList(void);
 
-	bool _GetCommandText(int,std::wstring&);
+	bool _GetCommandText(unsigned int,std::wstring&);
+	
+	bool _GetHelpText(void);
 
-	bool _GenerateMessage(int, std::wstring&);
-
-	bool _InitMenus(); 
-
-	bool _ParseMessage(const wchar_t*, std::wstring&);
-
-	bool _ParseMessageToList(const wchar_t*, std::list<std::wstring*>&);
-
+	bool _GenerateMessage(const wchar_t* , int cmdIndex, std::wstring*);
+	
 	CommunicationSocket* _communicationSocket;
 	
-	std::list<const wchar_t*>* _helpTextList;
+	std::vector<std::wstring*>* _helpTextList;
 
-	std::list<const wchar_t*>* _menuList;
+	std::vector<std::wstring*>* _menuList;
 
-	const wchar_t* _rootMenu;
+	std::wstring* _rootMenu;
 
-	std::list<const wchar_t*>* _selectedFiles;
+	std::vector<std::wstring>* _selectedFiles;
 
-	
 };
 
 #endif

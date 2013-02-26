@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-2013 Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -17,8 +17,7 @@
 
 #pragma once
 
-#include <unknwn.h>    
-#include <windows.h>
+#include "stdafx.h"
 
 class NativityOverlayFactory : public IClassFactory
 {
@@ -27,8 +26,7 @@ public:
 
     IFACEMETHODIMP_(ULONG) AddRef();
 
-    IFACEMETHODIMP CreateInstance(
-		IUnknown *pUnkOuter, REFIID riid, void **ppv);
+    IFACEMETHODIMP CreateInstance(IUnknown *pUnkOuter, REFIID riid, void **ppv);
 
 	IFACEMETHODIMP LockServer(BOOL fLock);
 

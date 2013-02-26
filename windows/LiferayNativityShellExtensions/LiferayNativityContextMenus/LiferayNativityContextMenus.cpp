@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-2013 Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -17,8 +17,12 @@
 #include "ContextMenuContants.h"
 
 #include <Shellapi.h>
-#include <strsafe.h>
 #include <Shlwapi.h>
+#include <stdlib.h>
+#include <Strsafe.h>
+
+#include <iostream>
+#include <fstream>
 
 using namespace std;
 
@@ -29,7 +33,7 @@ extern HINSTANCE instanceHandle;
 #define IDM_DISPLAY 0  
 #define IDB_BMP 160
 
-LiferayNativityContextMenus::LiferayNativityContextMenus()
+LiferayNativityContextMenus::LiferayNativityContextMenus(): _contextMenuUtil(0), _referenceCount(1), _nFiles(0)
 {	
 }
 
@@ -39,14 +43,10 @@ LiferayNativityContextMenus::~LiferayNativityContextMenus(void)
 
 IFACEMETHODIMP_(ULONG) LiferayNativityContextMenus::AddRef()
 {
-    long count = InterlockedIncrement(&_referenceCount);
-
-	return S_OK;
+	return InterlockedIncrement(&_referenceCount);
 }
 
-IFACEMETHODIMP LiferayNativityContextMenus::GetCommandString(
-	UINT_PTR idCommand, UINT uFlags, UINT *pwReserved, LPSTR pszName, 
-	UINT cchMax)
+IFACEMETHODIMP LiferayNativityContextMenus::GetCommandString(UINT_PTR idCommand, UINT uFlags, UINT *pwReserved, LPSTR pszName, UINT cchMax)
 {
 	HRESULT hResult = S_OK;
 
@@ -69,15 +69,14 @@ IFACEMETHODIMP LiferayNativityContextMenus::GetCommandString(
 	return hResult;
 }
 
-IFACEMETHODIMP LiferayNativityContextMenus::Initialize(
-    LPCITEMIDLIST pidlFolder, LPDATAOBJECT pDataObj, HKEY hKeyProgID)
+IFACEMETHODIMP LiferayNativityContextMenus::Initialize(LPCITEMIDLIST pidlFolder, LPDATAOBJECT pDataObj, HKEY hKeyProgID)
 {
     if (NULL == pDataObj)
     {
         return E_INVALIDARG;
     }
 
-    HRESULT hr = E_FAIL;
+	HRESULT hr = E_FAIL;
 
     FORMATETC fe = { CF_HDROP, NULL, DVASPECT_CONTENT, -1, TYMED_HGLOBAL };
 
@@ -99,16 +98,18 @@ IFACEMETHODIMP LiferayNativityContextMenus::Initialize(
 
     if (_nFiles > 0)
     {
+		_contextMenuUtil = new ContextMenuUtil();
         wchar_t szFileName[MAX_PATH];
     
 		for (UINT i = 0; i < _nFiles; i++)
         {
-			UINT success = DragQueryFile(
-				hDrop, i, szFileName, ARRAYSIZE(szFileName));
+			UINT success = DragQueryFile(hDrop, i, szFileName, ARRAYSIZE(szFileName));
 
             if (success != 0)
             {
-				_contextMenuUtil->AddFile(szFileName);
+				wstring* file = new wstring(szFileName);
+				_contextMenuUtil->AddFile(file);
+				delete file;
             }
         }
     }
@@ -120,9 +121,13 @@ IFACEMETHODIMP LiferayNativityContextMenus::Initialize(
 	return S_OK;
 }
 
-IFACEMETHODIMP LiferayNativityContextMenus::InvokeCommand(
-	LPCMINVOKECOMMANDINFO pici)
+IFACEMETHODIMP LiferayNativityContextMenus::InvokeCommand(LPCMINVOKECOMMANDINFO pici)
 {
+	if(_contextMenuUtil == 0)
+	{
+		_contextMenuUtil = new ContextMenuUtil();
+	}
+
    bool unicode = false;
    int actionIndex = -1;
 
@@ -136,19 +141,33 @@ IFACEMETHODIMP LiferayNativityContextMenus::InvokeCommand(
 
     if (!unicode && HIWORD(pici->lpVerb))
     {
+		size_t num_chars;
+		
 		string command = pici->lpVerb;
+		
 		wchar_t* buf = new wchar_t[ command.size() ];
-		size_t num_chars = mbstowcs( buf, command.c_str(), command.size() );
-		wstring wcommand( buf, num_chars );
+
+		errno_t result = mbstowcs_s(&num_chars, buf, command.size(), command.c_str(), _TRUNCATE);
+		
+		if(result != 0)
+		{
+			return false;
+		}
+
+		wstring* wcommand = new wstring( buf, num_chars );
 		delete[] buf; 
         
-		actionIndex = _contextMenuUtil->GetActionIndex(wcommand.c_str());  
+		actionIndex = _contextMenuUtil->GetActionIndex(wcommand);  
+
+		delete wcommand;
     }
     else if (unicode && HIWORD(((CMINVOKECOMMANDINFOEX*)pici)->lpVerbW))
     {
-		wstring command = ((CMINVOKECOMMANDINFOEX*)pici)->lpVerbW;
+		wstring* command = new wstring(((CMINVOKECOMMANDINFOEX*)pici)->lpVerbW);
 
-		actionIndex = _contextMenuUtil->GetActionIndex(command.c_str()); 
+		actionIndex = _contextMenuUtil->GetActionIndex(command); 
+
+		delete command;
     }
     else
     {
@@ -163,8 +182,7 @@ IFACEMETHODIMP LiferayNativityContextMenus::InvokeCommand(
     return S_OK;
 }
 
-IFACEMETHODIMP LiferayNativityContextMenus::QueryContextMenu(
-    HMENU hMenu, UINT indexMenu, UINT idCmdFirst, UINT idCmdLast, UINT uFlags)
+IFACEMETHODIMP LiferayNativityContextMenus::QueryContextMenu(HMENU hMenu, UINT indexMenu, UINT idCmdFirst, UINT idCmdLast, UINT uFlags)
 {
 	//No need for menu, this should not happen
 	if(_nFiles == 0)
@@ -178,50 +196,64 @@ IFACEMETHODIMP LiferayNativityContextMenus::QueryContextMenu(
         return MAKE_HRESULT(SEVERITY_SUCCESS, 0, USHORT(0));
     }
 
-	list<wstring*> menus;
+	if(!_contextMenuUtil->IsMenuNeeded())
+	{
+		return MAKE_HRESULT(SEVERITY_SUCCESS, 0, USHORT(0));
+	}
+
+	if(!_contextMenuUtil->InitMenus())
+	{
+		return MAKE_HRESULT(SEVERITY_SUCCESS, 0, USHORT(0));
+	}
+
+	vector<wstring*>* menus = new vector<wstring*>();
 
 	if(!_contextMenuUtil->GetMenus(menus))
 	{
 		return MAKE_HRESULT(SEVERITY_SUCCESS, 0, USHORT(0));
 	}
 
-	//No menus for these files
-	if((menus.size() == 0) || menus.empty())
+	if(menus == 0)
 	{
+		return MAKE_HRESULT(SEVERITY_SUCCESS, 0, USHORT(0));
+	}
+
+	//No menus for these files
+	if((menus->size() == 0) || menus->empty())
+	{
+		delete menus;
 		return MAKE_HRESULT(SEVERITY_SUCCESS, 0, USHORT(0));
 	}
 
 	HMENU subMenuHandle = CreatePopupMenu();
 
-	if(!_InsertRootMenu(hMenu, subMenuHandle, indexMenu + 2))
-	{
-		return HRESULT_FROM_WIN32(GetLastError());
-	}
-
 	int cmdCount = 0;
-	
-	//Add menus
-	for (list<wstring*>::iterator it = menus.begin(); it != menus.end(); it++)
-	{
-		wstring* menu = *it;
-		if(menu->compare(SEPARATOR) == 0)
-		{
-			if(!_InsertSeparator(hMenu, cmdCount))
-			{
-				return HRESULT_FROM_WIN32(GetLastError());
-			}
-		}
-		else
-		{
-			if(!_InsertMenu(subMenuHandle, cmdCount, idCmdFirst, menu->c_str()))
-			{
-				return HRESULT_FROM_WIN32(GetLastError());
-			}
-		}
 
-		cmdCount++;
+	bool success = true;
+
+	if(_InsertRootMenu(hMenu, subMenuHandle, indexMenu + 2))
+	{
+		for (vector<wstring*>::iterator it = menus->begin(); it != menus->end(); it++)
+		{
+			wstring* menu = *it;
+			
+			if(menu->compare(SEPARATOR) == 0)
+			{
+				_InsertSeparator(hMenu, cmdCount);
+			}
+			else
+			{
+				_InsertMenu(subMenuHandle, cmdCount, idCmdFirst, menu->c_str());
+			}
+
+			cmdCount++;
+		}
 	}
 
+	delete menus;
+
+	//Add menus
+	
 	idCmdLast = idCmdFirst + cmdCount;
 
 	return MAKE_HRESULT(SEVERITY_SUCCESS, 0, USHORT(IDM_DISPLAY + 1));
@@ -247,17 +279,17 @@ bool LiferayNativityContextMenus::_InsertRootMenu(HMENU hMenu, HMENU subMenuHand
 		
 	liferaySyncMenuItem.fMask = MIIM_STRING | MIIM_SUBMENU;
 
-	wstring text;
-	if(_contextMenuUtil->GetRootText(text))
+	wstring* text = new wstring();
+	if(!_contextMenuUtil->GetRootText(text))
 	{
 		return false;
 	}
 	
-	size_t wlen = wcslen(text.c_str());
+	size_t wlen = wcslen(text->c_str());
 
 	wchar_t* wdest = new wchar_t[wlen + 1];
 
-	errno_t error = wcscpy_s(wdest, wlen + 1, text.c_str());
+	errno_t error = wcscpy_s(wdest, wlen + 1, text->c_str());
 
 	liferaySyncMenuItem.dwTypeData = (LPWSTR)wdest;
 
@@ -330,41 +362,40 @@ IFACEMETHODIMP_(ULONG) LiferayNativityContextMenus::Release()
     {
 	    delete this;
     }
-	
+
 	return cRef;
 }
 
-HRESULT LiferayNativityContextMenus::_GetHelpText(
-	UINT_PTR idCommand, LPSTR pszName, UINT cchMax)
+HRESULT LiferayNativityContextMenus::_GetHelpText(UINT_PTR idCommand, LPSTR pszName, UINT cchMax)
 {
 	HRESULT hResult = E_FAIL;
 
-	wstring helpText;
-	if(!_contextMenuUtil->GetHelpText(idCommand, helpText))
+	wstring* helpText = new wstring();
+
+	if(!_contextMenuUtil->GetHelpText((int)idCommand, helpText))
 	{
 		return hResult;
 	}
 
 	hResult = StringCchCopy(
-		reinterpret_cast<PWSTR>(pszName), cchMax, helpText.c_str());
+		reinterpret_cast<PWSTR>(pszName), cchMax, helpText->c_str());
 
 	return hResult;
 }
 
-HRESULT LiferayNativityContextMenus::_GetVerb(
-	UINT_PTR idCommand, LPSTR pszName, UINT cchMax)
+HRESULT LiferayNativityContextMenus::_GetVerb(UINT_PTR idCommand, LPSTR pszName, UINT cchMax)
 {
-
 	HRESULT hResult = E_FAIL;
 
-	wstring verbText;
-	if(!_contextMenuUtil->GetVerbText(idCommand, verbText))
+	wstring* verbText = new wstring();
+
+	if(!_contextMenuUtil->GetVerbText((int)idCommand, *verbText))
 	{
 		return hResult;
 	}
 
 	hResult = StringCchCopy(
-		reinterpret_cast<PWSTR>(pszName), cchMax, verbText.c_str());
+		reinterpret_cast<PWSTR>(pszName), cchMax, verbText->c_str());
 
 	return hResult;
 }

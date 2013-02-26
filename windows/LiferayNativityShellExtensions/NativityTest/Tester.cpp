@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-2013 Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -17,6 +17,7 @@
 
 #include "ContextMenuUtil.h"
 #include "CommunicationSocket.h"
+#include "CommunicationProcessor.h"
 #include <iostream>
 
 using namespace std;
@@ -35,48 +36,54 @@ bool Tester::TestNativityUtil()
 	
 	CommunicationSocket* fakePlugInToServer = new CommunicationSocket(SERVER_TO_JAVA_RECEIVE_SOCKET);
 	CommunicationSocket* fakeServerToPlugIn = new CommunicationSocket(SERVER_TO_JAVA_SEND_SOCKET);
-	CommunicationSocket* fakeContextMenu = new CommunicationSocket(EXTENSION_TO_SERVER_SOCKET);
 	
-	
-	wstring* response = new wstring();
-
-	for(int i = 0; i < 100000; i++)
+	for(int i = 0; i < 20; i++)
 	{
 		wstring* message = new wstring();
-		if(fakePlugInToServer->ReceiveResponseOnly(*message))
+		if(fakePlugInToServer->ReceiveResponseOnly(message))
 		{
-			wcout<<"Received Message "<<*message<<endl;
+			wcout<<"Received Message "<<endl;
+
+			map<wstring*, vector<wstring*>*>* messages = new map<wstring*, vector<wstring*>*>();
+
+			if(CommunicationProcessor::ProcessMessage(message, messages))
+			{
+				wcout<<"Processed message"<<endl;
+			}
+			else
+			{
+				wcout<<"ERROR UNable to Process message"<<endl;
+			}
+
+			messages->erase(messages->begin(), messages->end());
+
+			delete messages;
 		}
 		else
 		{
 			wcout<<"Unable to receive message"<<endl;
 		}
+
 		delete message;
 
-		/*if(fakeServerToPlugIn->SendMessageOnly(L"Blah"))
-		{
-			wcout<<"Sent message to plug in"<<endl;
-		}
-		else
-		{
-			wcout<<"Unable to send message"<<endl;
-		}
-
-		if(fakeContextMenu->SendMessageReceiveResponse(L"Blah", *response))
-		{
-			wcout<<"Sent and received response "<<*response<<endl;
-		}
-		else
-		{
-			wcout<<"Unable to send and receive response"<<endl;
-		}*/
+		//if(fakeServerToPlugIn->SendMessageOnly(L"menuExec"))
+		//{
+		//	wcout<<"Sent message to plug in"<<endl;
+		//}
+		//else
+		//{
+		//	wcout<<"Unable to send message"<<endl;
+		//}
 
 		::Sleep(2000);
 	}
 
-	delete fakeContextMenu;
+	cout<<"Done!!!"<<endl;
+
 	delete fakePlugInToServer;
-	delete fakePlugInToServer;
+	cout<<"Deleted 2"<<endl;
+	delete fakeServerToPlugIn;
+	cout<<"Deleted 3"<<endl;
 
 	return true;
 }
@@ -84,28 +91,29 @@ bool Tester::TestNativityUtil()
 bool Tester::TestContextMenuUtil()
 {
 	cout<<"Beginning test context menu util"<<endl;
-	ContextMenuUtil contextMenuUtil;
+	ContextMenuUtil* contextMenuUtil = new ContextMenuUtil();
 
-    if(!contextMenuUtil.AddFile(IN_FILE_1))
+	wstring* file = new wstring(IN_FILE_1);
+    if(!contextMenuUtil->AddFile(file))
 	{
 		cout<<"Unable to add file"<<endl;
 		return false;
 	}
 
+	cout<<"Added file"<<endl;
 
-	/*int GetActionIndex(const wchar_t*);
+	if(!contextMenuUtil->InitMenus())
+	{
+		cout<<"Unable to init menus"<<endl;
+		return false;
+	}
 
-	bool GetHelpText(int, std::wstring&);
+	cout<<"Init Menus"<<endl;
 
-	bool GetMenus(std::list<std::wstring*>&);
-
-	bool GetRootText(std::wstring&);
-
-	bool GetVerbText(int, std::wstring&);
-
-	bool IsMenuNeeded(void);
-	
-	bool PerformAction(int);*/
-
+	if(!contextMenuUtil->PerformAction(3))
+	{
+		cout<<"Unable to perform action"<<endl;
+		return false;
+	}
 }
  

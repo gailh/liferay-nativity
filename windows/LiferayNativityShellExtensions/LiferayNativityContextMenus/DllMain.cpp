@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-2013 Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -14,15 +14,9 @@
 
 #include "ContextMenuFactory.h"
 #include "NativityContextMenuRegistrationHandler.h"
+#include "ContextMenuContants.h"
 #include <Guiddef.h>
 #include <windows.h>
-
-// {882FAB3F-7F07-402a-A94A-39744D146C1F}
-const CLSID CLSID_LiferayNativityContextMenus =  
-{
-	0x882fab3f, 0x7f07, 0x402a, 
-	{ 0xa9, 0x4a, 0x39, 0x74, 0x4d, 0x14, 0x6c, 0x1f }
-};
 
 
 HINSTANCE instanceHandle = NULL;
@@ -50,7 +44,16 @@ STDAPI DllGetClassObject(REFCLSID rclsid, REFIID riid, void **ppv)
 {
 	HRESULT hResult = CLASS_E_CLASSNOTAVAILABLE;
 
-	if (!IsEqualCLSID(CLSID_LiferayNativityContextMenus, rclsid))
+	GUID guid;  
+ 
+	hResult = CLSIDFromString(CONTEXT_MENU_GUID, (LPCLSID)&guid);
+
+	if(!SUCCEEDED(hResult))
+	{
+		return hResult;
+	}
+
+	if (!IsEqualCLSID(guid, rclsid))
 	{
 		return hResult;
 	}
@@ -96,16 +99,23 @@ HRESULT _stdcall DllRegisterServer(void)
 		return hResult;
 	}
 
-	hResult = NativityContextMenuRegistrationHandler::RegisterCOMObject(
-		szModule, CLSID_LiferayNativityContextMenus);
+	GUID guid;  
+ 
+	hResult = CLSIDFromString(CONTEXT_MENU_GUID, (LPCLSID)&guid);
 
 	if(!SUCCEEDED(hResult))
 	{
 		return hResult;
 	}
 
-	hResult = NativityContextMenuRegistrationHandler::MakeRegistryEntries(
-		CLSID_LiferayNativityContextMenus);
+	hResult = NativityContextMenuRegistrationHandler::RegisterCOMObject(szModule, guid);
+
+	if(!SUCCEEDED(hResult))
+	{
+		return hResult;
+	}
+
+	hResult = NativityContextMenuRegistrationHandler::MakeRegistryEntries(guid);
 
 	if(!SUCCEEDED(hResult))
 	{
@@ -128,8 +138,16 @@ STDAPI DllUnregisterServer(void)
 		return hr;
     }
 
-    hr = NativityContextMenuRegistrationHandler::UnregisterCOMObject(
-		CLSID_LiferayNativityContextMenus);
+	GUID guid;  
+ 
+	hr = CLSIDFromString(CONTEXT_MENU_GUID, (LPCLSID)&guid);
+
+	if(!SUCCEEDED(hr))
+	{
+		return hr;
+	}
+
+    hr = NativityContextMenuRegistrationHandler::UnregisterCOMObject(guid);
 
 	if (!SUCCEEDED(hr))
     {

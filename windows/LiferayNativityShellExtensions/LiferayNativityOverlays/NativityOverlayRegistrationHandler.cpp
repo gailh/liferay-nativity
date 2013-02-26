@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-2013 Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -13,38 +13,34 @@
  */
 
 #include "NativityOverlayRegistrationHandler.h"
+#include "stdafx.h"
 
-#include "OverlayContants.h"
-#include <windows.h>
+#include <iostream>
+#include <fstream>
 
-HRESULT NativityOverlayRegistrationHandler::MakeRegistryEntries(
-	const CLSID& clsid, PWSTR friendlyName)
+using namespace std;
+
+HRESULT NativityOverlayRegistrationHandler::MakeRegistryEntries(const CLSID& clsid, PWSTR friendlyName)
 {
 	HRESULT hResult;
 	
 	HKEY shellOverlayKey = NULL;
 
-	hResult = HRESULT_FROM_WIN32(
-		RegOpenKeyEx(
-			HKEY_LOCAL_MACHINE, REGISTRY_OVERLAY_KEY, 0, KEY_WRITE, 
-			&shellOverlayKey));
+	hResult = HRESULT_FROM_WIN32(RegOpenKeyEx(HKEY_LOCAL_MACHINE, REGISTRY_OVERLAY_KEY, 0, KEY_WRITE, &shellOverlayKey));
 
 	if (!SUCCEEDED(hResult))
 	{
-		hResult = RegCreateKey(
-			HKEY_LOCAL_MACHINE, REGISTRY_OVERLAY_KEY, &shellOverlayKey);
+		hResult = RegCreateKey(HKEY_LOCAL_MACHINE, REGISTRY_OVERLAY_KEY, &shellOverlayKey);
   
-		if(!SUCCEEDED(hResult)){
+		if(!SUCCEEDED(hResult))
+		{
 			return hResult;
 		}
 	}
 
 	HKEY syncExOverlayKey = NULL;
 
-	hResult = HRESULT_FROM_WIN32(
-		RegCreateKeyEx(
-			shellOverlayKey, friendlyName, 0, NULL, 
-			REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &syncExOverlayKey, NULL));
+	hResult = HRESULT_FROM_WIN32(RegCreateKeyEx(shellOverlayKey, friendlyName, 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &syncExOverlayKey, NULL));
 
 	if (!SUCCEEDED(hResult))
 	{
@@ -57,9 +53,7 @@ HRESULT NativityOverlayRegistrationHandler::MakeRegistryEntries(
     
 	LPCTSTR value = stringCLSID;
 
-	hResult = RegSetValueEx(
-		syncExOverlayKey, NULL, 0, REG_SZ, (LPBYTE)value, 
-		(DWORD)((wcslen(value)+1) * sizeof(TCHAR)));
+	hResult = RegSetValueEx(syncExOverlayKey, NULL, 0, REG_SZ, (LPBYTE)value, (DWORD)((wcslen(value)+1) * sizeof(TCHAR)));
 
 	if (!SUCCEEDED(hResult))
 	{
@@ -75,9 +69,7 @@ HRESULT NativityOverlayRegistrationHandler::RemoveRegistryEntries(PWSTR friendly
 	
 	HKEY shellOverlayKey = NULL;
 
-	hResult = HRESULT_FROM_WIN32(
-		RegOpenKeyEx(HKEY_LOCAL_MACHINE, 
-			REGISTRY_OVERLAY_KEY, 0, KEY_WRITE, &shellOverlayKey));
+	hResult = HRESULT_FROM_WIN32(RegOpenKeyEx(HKEY_LOCAL_MACHINE, REGISTRY_OVERLAY_KEY, 0, KEY_WRITE, &shellOverlayKey));
 
 	if (!SUCCEEDED(hResult))
 	{
@@ -86,8 +78,7 @@ HRESULT NativityOverlayRegistrationHandler::RemoveRegistryEntries(PWSTR friendly
 
 	HKEY syncExOverlayKey = NULL;
 
-	hResult = HRESULT_FROM_WIN32(
-		RegDeleteKeyEx(shellOverlayKey, friendlyName, DELETE, 0));
+	hResult = HRESULT_FROM_WIN32(RegDeleteKeyEx(shellOverlayKey, friendlyName, DELETE, 0));
 
 	if (!SUCCEEDED(hResult))
 	{
@@ -112,8 +103,7 @@ HRESULT NativityOverlayRegistrationHandler::RegisterCOMObject(PCWSTR modulePath,
 
 	HKEY hKey = NULL;
 
-	hResult = HRESULT_FROM_WIN32(
-		RegOpenKeyEx(HKEY_CLASSES_ROOT, REGISTRY_CLSID, 0, KEY_WRITE, &hKey));
+	hResult = HRESULT_FROM_WIN32(RegOpenKeyEx(HKEY_CLASSES_ROOT, REGISTRY_CLSID, 0, KEY_WRITE, &hKey));
 
 	if (!SUCCEEDED(hResult))
 	{
@@ -122,10 +112,7 @@ HRESULT NativityOverlayRegistrationHandler::RegisterCOMObject(PCWSTR modulePath,
 
 	HKEY clsidKey = NULL;
 
-	hResult = HRESULT_FROM_WIN32(
-		RegCreateKeyEx(
-			hKey, stringCLSID, 0, NULL, REG_OPTION_NON_VOLATILE, 
-			KEY_WRITE, NULL, &clsidKey, NULL));
+	hResult = HRESULT_FROM_WIN32(RegCreateKeyEx(hKey, stringCLSID, 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &clsidKey, NULL));
 
 	if(!SUCCEEDED(hResult))
 	{
@@ -134,10 +121,7 @@ HRESULT NativityOverlayRegistrationHandler::RegisterCOMObject(PCWSTR modulePath,
 
 	HKEY inprocessKey = NULL;
 
-	hResult = HRESULT_FROM_WIN32(
-		RegCreateKeyEx(
-			clsidKey, REGISTRY_IN_PROCESS, 0, NULL, REG_OPTION_NON_VOLATILE, 
-			KEY_WRITE, NULL, &inprocessKey, NULL));
+	hResult = HRESULT_FROM_WIN32(RegCreateKeyEx(clsidKey, REGISTRY_IN_PROCESS, 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &inprocessKey, NULL));
 
 	if(!SUCCEEDED(hResult))
 	{
@@ -146,28 +130,21 @@ HRESULT NativityOverlayRegistrationHandler::RegisterCOMObject(PCWSTR modulePath,
 
 	DWORD cbData = lstrlen(modulePath) * sizeof(*modulePath);
 
-	hResult = HRESULT_FROM_WIN32(
-		RegSetValue(inprocessKey, NULL, REG_SZ, modulePath, cbData));
+	hResult = HRESULT_FROM_WIN32(RegSetValue(inprocessKey, NULL, REG_SZ, modulePath, cbData));
 
 	if(!SUCCEEDED(hResult))
 	{
 		return hResult;
 	}
 
-    hResult = HRESULT_FROM_WIN32(
-		RegSetValueEx(
-			inprocessKey, REGISTRY_THREADING, 0, REG_SZ, (LPBYTE)REGISTRY_APARTMENT, 
-			(DWORD)((wcslen(REGISTRY_APARTMENT)+1) * sizeof(TCHAR))));
+    hResult = HRESULT_FROM_WIN32(RegSetValueEx(inprocessKey, REGISTRY_THREADING, 0, REG_SZ, (LPBYTE)REGISTRY_APARTMENT, (DWORD)((wcslen(REGISTRY_APARTMENT)+1) * sizeof(TCHAR))));
 
 	if(!SUCCEEDED(hResult))
 	{
 		return hResult;
 	}
 
-	hResult = HRESULT_FROM_WIN32(
-		RegSetValueEx(
-			inprocessKey, REGISTRY_VERSION, 0, REG_SZ, (LPBYTE)REGISTRY_VERSION_NUMBER, 
-			(DWORD)(wcslen(REGISTRY_VERSION_NUMBER)+1) * sizeof(TCHAR)));
+	hResult = HRESULT_FROM_WIN32(RegSetValueEx(inprocessKey, REGISTRY_VERSION, 0, REG_SZ, (LPBYTE)REGISTRY_VERSION_NUMBER, (DWORD)(wcslen(REGISTRY_VERSION_NUMBER)+1) * sizeof(TCHAR)));
 
 	if(!SUCCEEDED(hResult))
 	{
@@ -187,8 +164,7 @@ HRESULT NativityOverlayRegistrationHandler::UnregisterCOMObject(const CLSID& cls
 
 	HKEY hKey = NULL;
 
-	hResult = HRESULT_FROM_WIN32(
-		RegOpenKeyEx(HKEY_CLASSES_ROOT, REGISTRY_CLSID, 0, DELETE, &hKey));
+	hResult = HRESULT_FROM_WIN32(RegOpenKeyEx(HKEY_CLASSES_ROOT, REGISTRY_CLSID, 0, DELETE, &hKey));
 
 	if (!SUCCEEDED(hResult))
 	{
@@ -197,24 +173,21 @@ HRESULT NativityOverlayRegistrationHandler::UnregisterCOMObject(const CLSID& cls
 
 	HKEY clsidKey = NULL;
 
-	hResult = HRESULT_FROM_WIN32(
-		RegOpenKeyEx(hKey, stringCLSID, 0, DELETE, &clsidKey));
+	hResult = HRESULT_FROM_WIN32(RegOpenKeyEx(hKey, stringCLSID, 0, DELETE, &clsidKey));
 
 	if(!SUCCEEDED(hResult))
 	{
 		return hResult;
 	}
 
-	hResult = HRESULT_FROM_WIN32(
-		RegDeleteKeyEx(clsidKey, REGISTRY_IN_PROCESS, DELETE, 0));
+	hResult = HRESULT_FROM_WIN32(RegDeleteKeyEx(clsidKey, REGISTRY_IN_PROCESS, DELETE, 0));
 
 	if(!SUCCEEDED(hResult))
 	{
 		return hResult;
 	}
 
-	hResult = HRESULT_FROM_WIN32(
-		RegDeleteKeyEx(hKey, stringCLSID, DELETE, 0));
+	hResult = HRESULT_FROM_WIN32(RegDeleteKeyEx(hKey, stringCLSID, DELETE, 0));
 
 	if(!SUCCEEDED(hResult))
 	{

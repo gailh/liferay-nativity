@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-2013 Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -13,18 +13,8 @@
  */
 
 #include "NativityOverlayRegistrationHandler.h"
-//#include "OKOverlayFactory.h"
-//#include "Constants.h"
-
-#include <Guiddef.h>
-#include <windows.h>
-
-// {0DD5B4B0-25AF-4e09-A46B-9F274F3D700B}
-const CLSID CLSID_LiferaySyncOKOverlay = 
-{ 
-	0xdd5b4b0, 0x25af, 0x4e09, 
-		{0xa4, 0x6b, 0x9f, 0x27, 0x4f, 0x3d, 0x70, 0xb}
-};
+#include "NativityOverlayFactory.h"
+#include "stdafx.h"
 
 HINSTANCE instanceHandle = NULL;
 
@@ -51,8 +41,16 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD dwReason, LPVOID lpReserved)
 STDAPI DllGetClassObject(REFCLSID rclsid, REFIID riid, void **ppv)
 {
     HRESULT hResult = CLASS_E_CLASSNOTAVAILABLE;
+	GUID guid;  
+ 
+	hResult = CLSIDFromString(OVERLAY_GUID, (LPCLSID)&guid);
 
-    if (!IsEqualCLSID(CLSID_LiferaySyncOKOverlay, rclsid))
+	if (hResult != S_OK) 
+	{ 
+		return hResult;
+	}	 
+
+    if (!IsEqualCLSID(guid, rclsid))
     {
 		return hResult;
 	}
@@ -68,19 +66,19 @@ STDAPI DllGetClassObject(REFCLSID rclsid, REFIID riid, void **ppv)
 		return hResult;
 	}
 
-//    OKOverlayFactory* oKOverlayFactory = new OKOverlayFactory(szModule);
+    NativityOverlayFactory* nativityOverlayFactory = new NativityOverlayFactory(szModule);
 
- //   if (oKOverlayFactory)
- //   {
-	//	hResult = oKOverlayFactory->QueryInterface(riid, ppv);
-	//	oKOverlayFactory->Release();
-	//}
+    if (nativityOverlayFactory)
+    {
+		hResult = nativityOverlayFactory->QueryInterface(riid, ppv);
+		nativityOverlayFactory->Release();
+	}
     return hResult;
 }
 
 STDAPI DllCanUnloadNow(void)
 {
-    //return dllReferenceCount > 0 ? S_FALSE : S_OK;
+    return dllReferenceCount > 0 ? S_FALSE : S_OK;
 	
 	return S_FALSE;
 }
@@ -89,30 +87,37 @@ HRESULT _stdcall DllRegisterServer(void)
 {
 	HRESULT hResult = S_OK;
 
-	//wchar_t szModule[MAX_PATH];
+	wchar_t szModule[MAX_PATH];
 
-	//if (GetModuleFileName(instanceHandle, szModule, ARRAYSIZE(szModule)) == 0)
-	//{	
-	//	hResult = HRESULT_FROM_WIN32(GetLastError());
+	if (GetModuleFileName(instanceHandle, szModule, ARRAYSIZE(szModule)) == 0)
+	{	
+		hResult = HRESULT_FROM_WIN32(GetLastError());
 
-	//	return hResult;
-	//}
+		return hResult;
+	}
 
-	//hResult = SyncOverlayRegistrationHandler::RegisterCOMObject(
-	//	szModule, CLSID_LiferaySyncOKOverlay);
+	GUID guid;  
+ 
+	hResult = CLSIDFromString(OVERLAY_GUID, (LPCLSID)&guid);
 
-	//if(!SUCCEEDED(hResult))
-	//{
-	//	return hResult;
-	//}
+	if (hResult != S_OK) 
+	{ 
+		return hResult;
+	}
 
-	//hResult = SyncOverlayRegistrationHandler::MakeRegistryEntries(
-	//	CLSID_LiferaySyncOKOverlay, DL_OK_OVERLAY_DLL);
+	hResult = NativityOverlayRegistrationHandler::RegisterCOMObject(szModule, guid);
 
-	//if(!SUCCEEDED(hResult))
-	//{
-	//	return hResult;
-	//}
+	if(!SUCCEEDED(hResult))
+	{
+		return hResult;
+	}
+
+	hResult = NativityOverlayRegistrationHandler::MakeRegistryEntries(guid, OVERLAY_NAME);
+
+	if(!SUCCEEDED(hResult))
+	{
+		return hResult;
+	}
 
     return hResult;
 }
@@ -121,29 +126,36 @@ STDAPI DllUnregisterServer(void)
 {
     HRESULT hResult = S_OK;
 
- //   wchar_t szModule[MAX_PATH];
- //   
-	//if (GetModuleFileNameW(instanceHandle, szModule, ARRAYSIZE(szModule)) == 0)
- //   {
- //       hResult = HRESULT_FROM_WIN32(GetLastError());
- //       return hResult;
- //   }
+    wchar_t szModule[MAX_PATH];
+    
+	if (GetModuleFileNameW(instanceHandle, szModule, ARRAYSIZE(szModule)) == 0)
+    {
+        hResult = HRESULT_FROM_WIN32(GetLastError());
+        return hResult;
+    }
+		
+	GUID guid;  
+ 
+	hResult = CLSIDFromString(OVERLAY_GUID, (LPCLSID)&guid);
 
-	//hResult =SyncOverlayRegistrationHandler::UnregisterCOMObject(
-	//	CLSID_LiferaySyncOKOverlay);
+	if (hResult != S_OK) 
+	{ 
+		return hResult;
+	}
 
-	//if(!SUCCEEDED(hResult))
-	//{
-	//	return hResult;
-	//}
+	hResult = NativityOverlayRegistrationHandler::UnregisterCOMObject(guid);
 
-	//hResult = SyncOverlayRegistrationHandler::RemoveRegistryEntries(
-	//	DL_OK_OVERLAY_DLL);
-	//
-	//if (!SUCCEEDED(hResult))
- //   {
-	//	return hResult;
-	//}
+	if(!SUCCEEDED(hResult))
+	{
+		return hResult;
+	}
+
+	hResult = NativityOverlayRegistrationHandler::RemoveRegistryEntries(OVERLAY_NAME);
+	
+	if (!SUCCEEDED(hResult))
+    {
+		return hResult;
+	}
 
     return hResult;
 }

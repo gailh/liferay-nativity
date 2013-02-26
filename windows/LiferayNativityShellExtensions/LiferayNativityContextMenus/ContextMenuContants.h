@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-2013 Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -12,6 +12,9 @@
  * details.
  */
 
+ #define CONTEXT_MENU_GUID				L"{0DD5B4B0-25AF-4e09-A46B-9F274F3D7000}"
+
+//DLL Registration information
 #define REGISTRY_ALL_CONTEXT_MENU		L"*\\shellex\\ContextMenuHandlers\\LiferayNativityContextMenus"
 #define REGISTRY_FOLDER_CONTEXT_MENU	L"Folder\\shellex\\ContextMenuHandlers\\LiferaySyncContextMenus"
 #define REGISTRY_CLSID					L"CLSID"
@@ -21,20 +24,11 @@
 #define REGISTRY_VERSION				L"Version"
 #define REGISTRY_VERSION_NUMBER			L"1.0"
 
+//Menu Util
 #define SEPARATOR						L"-"
-#define GET_HELP_TEXT					1
-#define GET_MENU_LIST					2
-#define GET_ROOT_TEXT					3
-#define PERFORM_ACTION					4
 
-#define ARGS							L"args"
-#define CLOSE_BRACE						L"}"
-#define CLOSE_BRACKET					L"]"
-#define CMD								L"cmd"
-#define COMMA							L","
-#define EQUAL_SIGN						L"="
-#define OPEN_BRACE						L"{"
-#define OPEN_BRACKET					L"["
-#define QUOTE							L"\""
-
-#define PORT							33003
+//Remote Functions
+#define GET_MENU_LIST					L"getMenuList"
+#define PERFORM_ACTION					L"performAction"
+#define GET_HELP_ITEMS					L"getHelpItemsForMenus"
+#define PORT							33001

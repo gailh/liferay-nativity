@@ -30,13 +30,7 @@
     <ClCompile Include="LiferayNativityExtensionService.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ReceiveSocketClient.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="SendSocketClient.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="CommunicationProcessor.cpp">
+    <ClCompile Include="ServiceWorker.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -59,16 +53,10 @@
     <ClInclude Include="LiferayNativityExtensionService.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ReceiveSocketClient.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="stdafx.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SendSocketClient.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="CommunicationProcessor.h">
+    <ClInclude Include="ServiceWorker.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

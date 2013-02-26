@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-2013 Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -15,33 +15,26 @@
 #include "LiferayNativityExtensionService.h"
 #include "ThreadPool.h"
 #include "ConfigurationConstants.h"
+#include "CommunicationProcessor.h"
 
 using namespace std;
 
-LiferayNativityExtensionService::LiferayNativityExtensionService(
-	PWSTR pszServiceName, BOOL fCanStop, BOOL fCanShutdown, 
-    BOOL fCanPauseContinue)
-: CServiceBase(pszServiceName, fCanStop, fCanShutdown, fCanPauseContinue)
+LiferayNativityExtensionService::LiferayNativityExtensionService(PWSTR pszServiceName, BOOL fCanStop, BOOL fCanShutdown, BOOL fCanPauseContinue)
+	: CServiceBase(pszServiceName, fCanStop, fCanShutdown, fCanPauseContinue)
 {
-	cout<<"Creating service"<<endl;
-	
-    stopped = FALSE;
+	stopped = FALSE;
 
-	cout<<"Creating stop event"<<endl;
-
-    stoppedEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
+	stoppedEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
     
-	cout<<"Done creating stop event"<<endl;
-
 	if (stoppedEvent == NULL)
     {
-		cout<<"Failed to create event"<<endl;
-        throw GetLastError();
+	    throw GetLastError();
     }
 
-	_receiveSocketClient = new ReceiveSocketClient();
-	_sendSocketClient = new SendSocketClient();
-	_communicationProcessor = new CommunicationProcessor();
+	_receiveFromPlugInSocketClient = new CommunicationSocket(SOCKET_PORT_RECEIVE);
+	_sendToPlugInSocketClient = new CommunicationSocket(SOCKET_PORT_SEND);
+
+	_serviceWorker = new ServiceWorker();
 }
 
 LiferayNativityExtensionService::~LiferayNativityExtensionService(void)
@@ -55,48 +48,46 @@ LiferayNativityExtensionService::~LiferayNativityExtensionService(void)
 
 void LiferayNativityExtensionService::OnStart(DWORD dwArgc, LPWSTR *lpszArgv)
 {
-    WriteEventLogEntry(
-		L"Liferay Nativity Service in OnStart", EVENTLOG_INFORMATION_TYPE);
+    WriteEventLogEntry(L"Liferay Nativity Service in OnStart", EVENTLOG_INFORMATION_TYPE);
 
-    CThreadPool::QueueUserWorkItem(
-		&LiferayNativityExtensionService::ServiceWorkerThread, this);
+    CThreadPool::QueueUserWorkItem(&LiferayNativityExtensionService::ServiceWorkerThread, this);
 }
 
 void LiferayNativityExtensionService::ServiceWorkerThread(void)
 {
-	cout<<"Staring service worker thread"<<endl;
-	
-	WriteEventLogEntry(
-		L"Liferay Nativity Extension Service worker thread", 
-		EVENTLOG_INFORMATION_TYPE);
+	cout<<"ServiceWorkerThread(void)"<<endl;
 
-	bool receivedMessage;
-	wstring command;
-	wstring clientMessage;
-	wstring response;
+	WriteEventLogEntry(L"Liferay Nativity Extension Service worker thread", EVENTLOG_INFORMATION_TYPE);
 
     while (!stopped)
 	{
-		cout<<"Loop"<<endl;
+		cout<<"Not stopped"<<endl;
 
-		if(_receiveSocketClient->ReceiveMessage(command))
-		{
-			_communicationProcessor->ProcessMessage(command.c_str());
-			command.clear();
-		}
+		wstring* command = new wstring();
 
-		if(!stopped) 
+		if(_receiveFromPlugInSocketClient->ReceiveResponseOnly(command))
 		{
-			if(_sendSocketClient->SendMessageReceiveResponse(clientMessage.c_str(), response))
+			wcout<<"Received response "<<command->c_str()<<endl;
+
+			map<wstring*, vector<wstring*>*>* messages = new map<wstring*, vector<wstring*>*>();
+
+			if(CommunicationProcessor::ProcessMessage(command, messages))
 			{
-				_communicationProcessor->ProcessCommunication(clientMessage.c_str(), response.c_str());
+				cout<<"Processed response"<<endl;
+
+				if(!_serviceWorker->ProcessMessages(messages))
+				{
+					cout<<"Responding to message"<<endl;
+
+					WriteEventLogEntry(L"Unable to process message", EVENTLOG_INFORMATION_TYPE);
+				}
 			}
+			delete messages;
 		}
+		delete command;
     }
 
-	WriteEventLogEntry(
-		L"Liferay Nativity Extension Service worker thread stopping", 
-		EVENTLOG_INFORMATION_TYPE);
+	WriteEventLogEntry(L"Liferay Nativity Extension Service worker thread stopping", EVENTLOG_INFORMATION_TYPE);
 
     SetEvent(stoppedEvent);
 }
@@ -112,9 +103,7 @@ void LiferayNativityExtensionService::Test()
 //
 void LiferayNativityExtensionService::OnStop()
 {
-    WriteEventLogEntry(
-		L"Liferay Nativity Extension Service in OnStop", 
-		EVENTLOG_INFORMATION_TYPE);
+    WriteEventLogEntry(L"Liferay Nativity Extension Service in OnStop", EVENTLOG_INFORMATION_TYPE);
    
 	stopped = TRUE;
     
@@ -123,3 +112,4 @@ void LiferayNativityExtensionService::OnStop()
         throw GetLastError();
     }
 }
+

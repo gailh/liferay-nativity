@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-2013 Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -32,18 +32,13 @@ public:
 
 	IFACEMETHODIMP_(ULONG) AddRef();
 
-	IFACEMETHODIMP GetCommandString(
-		UINT_PTR idCommand, UINT uFlags, UINT *pwReserved, LPSTR pszName, 
-		UINT cchMax);
+	IFACEMETHODIMP GetCommandString(UINT_PTR idCommand, UINT uFlags, UINT *pwReserved, LPSTR pszName, UINT cchMax);
 
-	IFACEMETHODIMP Initialize(
-		LPCITEMIDLIST pidlFolder, LPDATAOBJECT pDataObj, HKEY hKeyProgID);
+	IFACEMETHODIMP Initialize(LPCITEMIDLIST pidlFolder, LPDATAOBJECT pDataObj, HKEY hKeyProgID);
 
 	IFACEMETHODIMP InvokeCommand(LPCMINVOKECOMMANDINFO pici);
 
-	IFACEMETHODIMP QueryContextMenu(
-		HMENU hMenu, UINT indexMenu, UINT idCmdFirst, UINT idCmdLast, 
-		UINT uFlags);
+	IFACEMETHODIMP QueryContextMenu(HMENU hMenu, UINT indexMenu, UINT idCmdFirst, UINT idCmdLast, UINT uFlags);
 
     IFACEMETHODIMP QueryInterface(REFIID riid, void **ppv);
     

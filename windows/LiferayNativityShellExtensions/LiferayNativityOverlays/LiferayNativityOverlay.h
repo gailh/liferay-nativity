@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-2013 Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -15,14 +15,9 @@
 #ifndef LIFERAYNATIVITYOVERLAY_H
 #define LIFERAYNATIVITYOVERLAY_H
 
-#pragma once
+#include "stdafx.h"
 
-//#include "NativityJavaInterface.h"
-
-#include <shlobj.h>
-#include <string>
-#include <windows.h>
-     
+#pragma once    
 
 class LiferayNativityOverlay : public IShellIconOverlayIdentifier
 
@@ -32,8 +27,7 @@ public:
 
 	IFACEMETHODIMP_(ULONG) AddRef();
 
-	IFACEMETHODIMP GetOverlayInfo(
-		PWSTR pwszIconFile, int cchMax, int *pIndex, DWORD *pdwFlags);
+	IFACEMETHODIMP GetOverlayInfo(PWSTR pwszIconFile, int cchMax, int *pIndex, DWORD *pdwFlags);
 
 	IFACEMETHODIMP GetPriority(int *pPriority);
 
@@ -47,13 +41,17 @@ protected:
     ~LiferayNativityOverlay(void);
 
 private:
+	bool _GenerateMessage(const wchar_t*, std::wstring*);
 
-	bool _DoesFileNeedOverlay(const wchar_t* filePath);
+	bool _IsOverlaysEnabled();
+
+	bool _IsMonitoredFile(const wchar_t* filePath);
+
+	bool _IsMonitoredFileState(const wchar_t* filePath);
 
     long _referenceCount;
 
-//	NativityJavaInterface* _nativityJavaInterface;
-
+	CommunicationSocket* _communicationSocket;
 };
 
 #endif

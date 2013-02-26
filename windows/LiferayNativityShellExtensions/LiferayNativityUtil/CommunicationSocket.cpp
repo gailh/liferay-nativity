@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2000-2012 Liferay, Inc. All rights reserved.
+ * Copyright (c) 2000-2013 Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License as published by the Free
@@ -13,99 +13,110 @@
  */
 
 #include "CommunicationSocket.h"
-#include "CommunicationConstants.h"
+#include "UtilConstants.h"
+#include <WinSock2.h>
+#include <Ws2def.h>
+#include <windows.h>
 #include <iostream>
+#include <vector>
 
 using namespace std;
 
 #define DEFAULT_BUFLEN 4096
 
-CommunicationSocket::CommunicationSocket(int port): 
-	_port(port), _clientSocket(INVALID_SOCKET)
+CommunicationSocket::CommunicationSocket(int port): _port(port)
 {
+	WSADATA wsaData;
 
+    HRESULT iResult = WSAStartup(MAKEWORD(2,2), &wsaData);
+
+    if (iResult != NO_ERROR)
+	{
+		int error = WSAGetLastError();
+    }
 }
 
 CommunicationSocket::~CommunicationSocket()
 {
+	WSACleanup();
 }
 
-bool CommunicationSocket::Close()
+bool CommunicationSocket::ReceiveResponseOnly(wstring* message)
 {
-	HRESULT result = shutdown(_clientSocket, SD_SEND);
-    
-	if (result == SOCKET_ERROR) {
-        closesocket(_clientSocket);
-        WSACleanup();
-        return L"";
-    }
+	SOCKET clientSocket = INVALID_SOCKET;
 
-	return false;
-}
+	clientSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
-bool CommunicationSocket::Initialize()
-{
-	_clientSocket = INVALID_SOCKET;
-		
-	int iResult;
-
-	WSADATA wsaData;
+	if (clientSocket == INVALID_SOCKET)
+	{	
+		int error = WSAGetLastError();
 	
-	struct sockaddr_in clientService;
-	
-    iResult = WSAStartup(MAKEWORD(2,2), &wsaData);
-
-    if (iResult != NO_ERROR) 
-	{
-	    return false;
-    }
-
-	_clientSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-
-	if (_clientSocket == INVALID_SOCKET) 
-	{
-		WSACleanup();
 		return false;
 	}
+
+	struct sockaddr_in clientService;
 
 	clientService.sin_family = AF_INET;
-	clientService.sin_addr.s_addr = inet_addr(SOCKET_ADDRESS);
+	clientService.sin_addr.s_addr = inet_addr(PLUG_IN_SOCKET_ADDRESS);
 	clientService.sin_port = htons(_port);
 
-	iResult = connect( _clientSocket, (SOCKADDR*) &clientService, sizeof(clientService) );
+	HRESULT iResult = connect( clientSocket, (SOCKADDR*) &clientService, sizeof(clientService) );
 
-	if (iResult == SOCKET_ERROR) 
+	if (iResult == SOCKET_ERROR)
 	{
-		closesocket(_clientSocket);
-		WSACleanup();
+		int error = WSAGetLastError();
+	
+		closesocket(clientSocket);
 		return false;
 	}
+
+	int bytesRead;
+
+	do {
+		char rec_buf[DEFAULT_BUFLEN];
+		bytesRead = recv(clientSocket, rec_buf, DEFAULT_BUFLEN, MSG_WAITALL);
+
+		if (bytesRead > 0)
+		{
+			wchar_t* buf = new wchar_t[ bytesRead/2 + 1];
+			int value;
+
+			int j = 0;
+
+			for(int i = 0; i < bytesRead; i+=2)
+			{
+				value = rec_buf[i]<<rec_buf[i+1];
+
+				buf[j] = btowc(value);
+				
+				j++;
+			}
+
+			buf[j] = 0;
+
+			message->append(buf);
+
+			delete[] buf;
+		}
+    } while( bytesRead > 0 );
+
+	HRESULT result = shutdown(clientSocket, SD_BOTH);
+
+	if (result == SOCKET_ERROR)
+	{
+		int error = WSAGetLastError();
+
+		closesocket(clientSocket);
+		return false;
+	}
+
+	closesocket(clientSocket);
 
 	return true;
 }
 
-bool CommunicationSocket::ReceiveResponseOnly(wstring& message)
+bool CommunicationSocket::ConvertData(wchar_t* buf, int bytesRead, char* rec_buf)
 {
-	cout<<"Receive Response Only"<<endl;
-
-	if(_clientSocket == INVALID_SOCKET)
-	{	
-		cout<<"Initializing"<<endl;
-		Initialize();
-	}
-
-	char rec_buf[DEFAULT_BUFLEN];
-	int bytesRead = recv(_clientSocket, rec_buf, DEFAULT_BUFLEN, MSG_WAITALL);
-
-	cout<<"Read "<<bytesRead<<endl;
-	
-	if(bytesRead < 1)
-	{
-		return false;
-	}
-	
-	wchar_t* buf = new wchar_t[ bytesRead/2 ];
-	
 	int value;
 
 	int j = 0;
@@ -119,40 +130,92 @@ bool CommunicationSocket::ReceiveResponseOnly(wstring& message)
 		j++;
 	}
 
-	message = buf;
-
-	delete[] buf;
-
-    return true;
-}
-
-bool CommunicationSocket::SendMessageOnly(const wchar_t* message)
-{
-	if(_clientSocket == INVALID_SOCKET)
-	{	
-		Initialize();
-	}
-
-    HRESULT result = send( _clientSocket, (char *)message, (int)(wcslen(message) * 2), 0 );
-
-    if (result == SOCKET_ERROR) 
-	{
-        Close();
-        return false;
-    }
-
-	result = shutdown(_clientSocket, SD_SEND);
-
-    if (result == SOCKET_ERROR) 
-	{
-        Close();
-        return false;
-    }
-
 	return true;
 }
 
-bool CommunicationSocket::SendMessageReceiveResponse(const wchar_t* message, wstring& response)
+bool CommunicationSocket::SendMessageReceiveResponse(const wchar_t* message, wstring* response)
 {
-	return SendMessageOnly(message) && ReceiveResponseOnly(response);
+	SOCKET clientSocket = INVALID_SOCKET;
+
+	clientSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+
+	if (clientSocket == INVALID_SOCKET)
+	{
+		int error = WSAGetLastError();
+	
+		return false;
+	}
+
+	struct sockaddr_in clientService;
+
+	clientService.sin_family = AF_INET;
+	clientService.sin_addr.s_addr = inet_addr(PLUG_IN_SOCKET_ADDRESS);
+	clientService.sin_port = htons(_port);
+
+	HRESULT iResult = connect( clientSocket, (SOCKADDR*) &clientService, sizeof(clientService) );
+
+	if (iResult == SOCKET_ERROR)
+	{
+		int error = WSAGetLastError();
+	
+		closesocket(clientSocket);
+		return false;
+	}
+
+	size_t result = send( clientSocket, (char *)message, (int)(wcslen(message) * 2), 0 );
+
+    if (result == SOCKET_ERROR)
+	{
+		int error = WSAGetLastError();
+	
+        closesocket(clientSocket);
+        return false;
+    }
+
+	// shutdown the connection since no more data will be sent
+    
+	result = shutdown(clientSocket, SD_SEND);
+    
+	if (result == SOCKET_ERROR) 
+	{
+		int error = WSAGetLastError();
+	
+        closesocket(clientSocket);
+        return false;
+    }
+
+	char rec_buf[DEFAULT_BUFLEN];
+	int bytesRead = recv(clientSocket, rec_buf, DEFAULT_BUFLEN, MSG_WAITALL);
+
+	wchar_t* buf = new wchar_t[ bytesRead/2 ];
+
+	int value;
+
+	int j = 0;
+
+	for(int i = 0; i < bytesRead; i+=2)
+	{
+		value = rec_buf[i]<<rec_buf[i+1];
+
+		buf[j] = btowc(value);
+
+		j++;
+	}
+
+	*response = buf;
+
+	delete[] buf;
+
+	result = shutdown(clientSocket, SD_BOTH);
+
+	if (result == SOCKET_ERROR)
+	{
+		int error = WSAGetLastError();
+	
+		closesocket(clientSocket);
+		return false;
+	}
+
+	closesocket(clientSocket);
+	return true;
 }
