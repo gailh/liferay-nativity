@@ -95,16 +95,29 @@ OSStatus SendFinderSyncEvent(const FSRef* inObjectRef)
 	return result;
 }
 
-- (void)removeAllIcons
+- (void)notifyFileChanged:(NSString*)path
 {
-    [fileNamesCache_ removeAllObjects];
-    
-    [self repaintAllWindows];
+	FSRef ref;
+
+	CFURLGetFSRef((CFURLRef)[NSURL fileURLWithPath: path], &ref);
+	SendFinderSyncEvent(&ref);
+
+	[[NSWorkspace sharedWorkspace] noteFileSystemChanged:path];
 }
 
-- (void)removeIconFromFile:(NSString*)path
+- (void)removeAllIcons
 {
-	[fileNamesCache_ removeObjectForKey:path];
+	[fileNamesCache_ removeAllObjects];
+
+	[self repaintAllWindows];
+}
+
+- (void)removeIcons:(NSArray*)paths
+{
+	for (NSString* path in paths)
+	{
+		[fileNamesCache_ removeObjectForKey:path];
+	}
 
 	[self repaintAllWindows];
 }
@@ -128,15 +141,6 @@ OSStatus SendFinderSyncEvent(const FSRef* inObjectRef)
 			[controller drawCompletelyIntoBackBuffer];
 		}
 	}
-}
-
-- (void)setIcon:(NSNumber*)icon forFile:(NSString*)path
-{
-	NSDictionary* iconDictionary = [[NSMutableDictionary alloc] init];
-
-	[iconDictionary setValue:icon forKey:path];
-
-	[self setIcons:iconDictionary];
 }
 
 - (void)setIcons:(NSDictionary*)iconDictionary

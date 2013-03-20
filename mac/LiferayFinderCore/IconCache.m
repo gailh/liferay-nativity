@@ -44,9 +44,11 @@ static IconCache* sharedInstance = nil;
 	return sharedInstance;
 }
 
-- (void)unregisterIcon:(NSNumber*)iconId
+- (NSImage*)getIcon:(NSNumber*)iconId
 {
-	[dictionary_ removeObjectForKey:iconId];
+	NSImage* image = [dictionary_ objectForKey:iconId];
+
+	return image;
 }
 
 - (NSNumber*)registerIcon:(NSString*)path
@@ -67,11 +69,9 @@ static IconCache* sharedInstance = nil;
 	return [NSNumber numberWithInt:currentIconId_];
 }
 
-- (NSImage*)getIcon:(NSNumber*)iconId
+- (void)unregisterIcon:(NSNumber*)iconId
 {
-	NSImage* image = [dictionary_ objectForKey:iconId];
-
-	return image;
+	[dictionary_ removeObjectForKey:iconId];
 }
 
 @end

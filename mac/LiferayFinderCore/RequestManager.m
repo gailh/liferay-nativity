@@ -15,6 +15,7 @@
 #import "RequestManager.h"
 #import "ContentManager.h"
 #import "IconCache.h"
+#import "JSONKit.h"
 #include "MenuManager.h"
 
 @implementation RequestManager
@@ -58,182 +59,104 @@
 	return sharedInstance;
 }
 
-- (void)execCommand:(NSArray*)cmdData replyTo:(AsyncSocket*)sock
+- (void)execCommand:(NSDictionary*)jsonDictionary replyTo:(AsyncSocket*)sock
 {
-	if ([cmdData count] == 0)
+	NSString* cmdId = [jsonDictionary objectForKey:@"command"];
+
+	NSData* args = [jsonDictionary objectForKey:@"args"];
+
+	if (!args)
 	{
 		return;
 	}
-
-	NSString* cmdId = (NSString*)[cmdData objectAtIndex:0];
-	if ([cmdId isEqualToString:@"setFileIcon"])
+	if ([cmdId isEqualToString:@"setFileIcons"])
 	{
-		[self execSetFileIconCmd:cmdData replyTo:sock];
-	}
-	else if ([cmdId isEqualToString:@"setFileIcons"])
-	{
-		[self execSetFileIconsCmd:cmdData replyTo:sock];
-	}
-    else if ([cmdId isEqualToString:@"removeAllFileIcons"])
-	{
-		[self execRemoveAllFileIconsCmd:cmdData replyTo:sock];
-	}
-	else if ([cmdId isEqualToString:@"removeFileIcon"])
-	{
-		[self execRemoveFileIconCmd:cmdData replyTo:sock];
+		[self execSetFileIconsCmd:args replyTo:sock];
 	}
 	else if ([cmdId isEqualToString:@"removeFileIcons"])
 	{
-		[self execRemoveFileIconsCmd:cmdData replyTo:sock];
+		[self execRemoveFileIconsCmd:args replyTo:sock];
+	}
+	else if ([cmdId isEqualToString:@"removeAllFileIcons"])
+	{
+		[self execRemoveAllFileIconsCmd:args replyTo:sock];
 	}
 	else if ([cmdId isEqualToString:@"enableOverlays"])
 	{
-		[self execEnableOverlaysCmd:cmdData replyTo:sock];
+		[self execEnableOverlaysCmd:args replyTo:sock];
 	}
 	else if ([cmdId isEqualToString:@"registerIcon"])
 	{
-		[self execRegisterIconCmd:cmdData replyTo:sock];
+		[self execRegisterIconCmd:args replyTo:sock];
 	}
 	else if ([cmdId isEqualToString:@"unregisterIcon"])
 	{
-		[self execUnregisterIconCmd:cmdData replyTo:sock];
+		[self execUnregisterIconCmd:args replyTo:sock];
 	}
 	else if ([cmdId isEqualToString:@"setMenuTitle"])
 	{
-		[self execSetMenuTitleCmd:cmdData replyTo:sock];
+		[self execSetMenuTitleCmd:args replyTo:sock];
 	}
-
 }
 
-- (void)execEnableOverlaysCmd:(NSArray*)cmdData replyTo:(AsyncSocket*)sock
+- (void)execEnableOverlaysCmd:(NSData*)cmdData replyTo:(AsyncSocket*)sock
 {
-	if ([cmdData count] != 2)
-	{
-		return;
-	}
+	NSNumber* enabled = (NSNumber*)cmdData;
 
-	NSString* enabled = (NSString*)[cmdData objectAtIndex:1];
+	[[ContentManager sharedInstance] enableOverlays:enabled];
 
-	[[ContentManager sharedInstance] enableOverlays:[enabled isEqualToString:@"1"]];
 	[self replyString:@"1" toSocket:sock];
-
 }
 
-- (void)execRegisterIconCmd:(NSArray*)cmdData replyTo:(AsyncSocket*)sock
+- (void)execRegisterIconCmd:(NSData*)cmdData replyTo:(AsyncSocket*)sock
 {
-	if ([cmdData count] != 2)
-	{
-		return;
-	}
-
-	NSString* path = (NSString*)[cmdData objectAtIndex:1];
+	NSString* path = (NSString*)cmdData;
 
 	NSNumber* index = [[IconCache sharedInstance] registerIcon:path];
+
 	[self replyString:[numberFormatter stringFromNumber:index] toSocket:sock];
 }
 
-- (void)execRemoveAllFileIconsCmd:(NSArray*)cmdData replyTo:(AsyncSocket*)sock
+- (void)execRemoveAllFileIconsCmd:(NSData*)cmdData replyTo:(AsyncSocket*)sock
 {
-	NSUInteger cmdDataCount = [cmdData count];
-    
-	if (cmdDataCount != 2)
-	{
-		return;
-	}
-
-    [[ContentManager sharedInstance] removeAllIcons];
-    
-	[self replyString:@"1" toSocket:sock];
-}
-
-- (void)execRemoveFileIconCmd:(NSArray*)cmdData replyTo:(AsyncSocket*)sock
-{
-	if ([cmdData count] != 2)
-	{
-		return;
-	}
-
-	NSString* fileName = (NSString*)[cmdData objectAtIndex:1];
-
-	[[ContentManager sharedInstance] removeIconFromFile:fileName];
+	[[ContentManager sharedInstance] removeAllIcons];
 
 	[self replyString:@"1" toSocket:sock];
 }
 
-- (void)execRemoveFileIconsCmd:(NSArray*)cmdData replyTo:(AsyncSocket*)sock
+- (void)execRemoveFileIconsCmd:(NSData*)cmdData replyTo:(AsyncSocket*)sock
 {
-	NSUInteger cmdDataCount = [cmdData count];
+	NSArray* paths = (NSArray*)cmdData;
 
-	if (cmdDataCount < 2)
-	{
-		return;
-	}
-
-	for (int i = 1; i < cmdDataCount; i++)
-	{
-		NSString* fileName = (NSString*)[cmdData objectAtIndex:i];
-
-		[[ContentManager sharedInstance] removeIconFromFile:fileName];
-	}
+	[[ContentManager sharedInstance] removeIcons:paths];
 
 	[self replyString:@"1" toSocket:sock];
 }
 
-
-- (void)execSetFileIconCmd:(NSArray*)cmdData replyTo:(AsyncSocket*)sock
+- (void)execSetFileIconsCmd:(NSData*)cmdData replyTo:(AsyncSocket*)sock
 {
-	if ([cmdData count] != 3)
-	{
-		return;
-	}
-
-	NSString* fileName = (NSString*)[cmdData objectAtIndex:1];
-	NSString* iconIndex = (NSString*)[cmdData objectAtIndex:2];
-
-	[[ContentManager sharedInstance] setIcon:[numberFormatter numberFromString:iconIndex] forFile:fileName];
-	[self replyString:@"1" toSocket:sock];
-}
-
-- (void)execSetFileIconsCmd:(NSArray*)cmdData replyTo:(AsyncSocket*)sock
-{
-	NSUInteger cmdDataCount = [cmdData count];
-
-	if ((cmdDataCount < 3) || (cmdDataCount + 1) % 2)
-	{
-		return;
-	}
-
-	NSMutableDictionary* iconDictionary = [[NSMutableDictionary alloc] init];
-
-	for (int i = 1; i < cmdDataCount - 1; i += 2)
-	{
-		NSString* iconIdString = [cmdData objectAtIndex:(i + 1)];
-		NSNumber* iconId = [numberFormatter numberFromString:iconIdString];
-
-		NSString* path = [cmdData objectAtIndex:i];
-
-		[iconDictionary setObject:iconId forKey:path];
-	}
+	NSDictionary* iconDictionary = (NSDictionary*)cmdData;
 
 	[[ContentManager sharedInstance] setIcons:iconDictionary];
+
 	[self replyString:@"1" toSocket:sock];
 }
 
-- (void)execSetMenuTitleCmd:(NSArray*)cmdData replyTo:(AsyncSocket*)sock
+- (void)execSetMenuTitleCmd:(NSData*)cmdData replyTo:(AsyncSocket*)sock
 {
-	if ([cmdData count] != 2)
-	{
-		return;
-	}
-
-	NSString* title = (NSString*)[cmdData objectAtIndex:1];
+	NSString* title = (NSString*)cmdData;
 
 	[[MenuManager sharedInstance] setMenuTitle:title];
+
 	[self replyString:@"1" toSocket:sock];
 }
 
-- (void)execUnregisterIconCmd:(NSArray*)cmdData replyTo:(AsyncSocket*)sock
+- (void)execUnregisterIconCmd:(NSData*)cmdData replyTo:(AsyncSocket*)sock
 {
+	NSNumber* iconId = (NSNumber*)cmdData;
+
+	[[IconCache sharedInstance] unregisterIcon:iconId];
+
 	[self replyString:@"1" toSocket:sock];
 }
 
@@ -244,45 +167,53 @@
 		return;
 	}
 
-	NSString* text = @"menuExec:";
+	NSDictionary* itemDictionary = [[NSMutableDictionary alloc] init];
 
-	text = [text stringByAppendingString:[item stringValue]];
-	text = [text stringByAppendingString:@":"];
-	text = [text stringByAppendingString:title];
+	[itemDictionary setValue:item forKey:@"menuIndex"];
+	[itemDictionary setValue:title forKey:@"menuText"];
 
-	NSData* data = [[text stringByAppendingString:@"\r\n"] dataUsingEncoding:NSUTF8StringEncoding];
+	NSDictionary* menuExecDictionary = [[NSMutableDictionary alloc] init];
+
+	[menuExecDictionary setValue:@"menuExec" forKey:@"command"];
+	[menuExecDictionary setValue:itemDictionary forKey:@"args"];
+
+	NSString* jsonString = [menuExecDictionary JSONString];
+
+	NSData* data = [[jsonString stringByAppendingString:@"\r\n"] dataUsingEncoding:NSUTF8StringEncoding];
 	[data retain];
 
 	[callbackSocket writeData:data withTimeout:-1 tag:0];
 }
 
-- (NSArray* )menuItemsForFiles:(NSArray*)files
+- (NSArray*)menuItemsForFiles:(NSArray*)files
 {
 	if (callbackSocket == nil)
 	{
 		return nil;
 	}
 
-	NSString* text = @"menuQuery";
-	for (int i = 0; i < [files count]; ++i)
-	{
-		text = [text stringByAppendingString:@":"];
-		text = [text stringByAppendingString:[files objectAtIndex:i]];
-	}
+	NSDictionary* menuQueryDictionary = [[NSMutableDictionary alloc] init];
 
-	NSData* data = [[text stringByAppendingString:@"\r\n"] dataUsingEncoding:NSUTF8StringEncoding];
+	[menuQueryDictionary setValue:@"menuQuery" forKey:@"command"];
+	[menuQueryDictionary setValue:files forKey:@"args"];
+
+	NSString* jsonString = [menuQueryDictionary JSONString];
+
+	NSData* data = [[jsonString stringByAppendingString:@"\r\n"] dataUsingEncoding:NSUTF8StringEncoding];
 	[data retain];
 
 	[callbackSocket writeData:data withTimeout:-1 tag:0];
 
 	NSRunLoop* runLoop = [NSRunLoop currentRunLoop];
+
 	callbackMsg = nil;
+
 	while (callbackMsg == nil)
 	{
 		[runLoop runMode:NSDefaultRunLoopMode beforeDate:[NSDate distantFuture]];
 	}
 
-	return [callbackMsg componentsSeparatedByString:@":"];
+	return (NSArray*)[callbackMsg objectFromJSONString];
 }
 
 - (void)onSocket:(AsyncSocket*)sock didAcceptNewSocket:(AsyncSocket*)newSocket
@@ -309,11 +240,10 @@
 {
 	if (sock == connectedSocket)
 	{
-		NSData* strData = [data subdataWithRange:NSMakeRange(0, [data length] - 2)];
-		NSString* msg = [[NSString alloc] initWithData:strData encoding:NSUTF8StringEncoding];
+		NSData* jsonData = [data subdataWithRange:NSMakeRange(0, [data length] - 2)];
+		NSDictionary* jsonDictionary = [jsonData objectFromJSONData];
 
-		NSArray* cmdData = [msg componentsSeparatedByString:@":"];
-		[self execCommand:cmdData replyTo:sock];
+		[self execCommand:jsonDictionary replyTo:sock];
 
 		[sock readDataToData:[AsyncSocket CRLFData] withTimeout:-1 tag:0];
 	}
@@ -384,7 +314,6 @@
 		}
 
 		isRunning = YES;
-
 	}
 }
 
