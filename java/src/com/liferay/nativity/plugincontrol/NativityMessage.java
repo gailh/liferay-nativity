@@ -12,18 +12,40 @@
  * details.
  */
 
-package com.liferay.nativity.plugincontrol.win;
+package com.liferay.nativity.plugincontrol;
 
 /**
- * @author Gail Hernandez
+ * @author Dennis Ju
  */
-public class PluginException extends Exception {
+public class NativityMessage {
 
-	public static final String ALREADY_CONNECTED =
-		"Unable to start, plugin already running";
-
-	public PluginException(String message) {
-		super(message);
+	public NativityMessage(String command, Object value) {
+		_command = command;
+		_value = value;
 	}
+
+	public String getCommand() {
+		return _command;
+	}
+
+	public Object getValue() {
+		return _value;
+	}
+
+	public void setCommand(String command) {
+		_command = command;
+	}
+
+	public void setValue(Object value) {
+		_value = value;
+	}
+
+	// Parameterless constructor needed for flexjson
+
+	protected NativityMessage() {
+	}
+
+	private String _command;
+	private Object _value;
 
 }

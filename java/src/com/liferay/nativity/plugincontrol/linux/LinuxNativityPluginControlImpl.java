@@ -14,38 +14,31 @@
 
 package com.liferay.nativity.plugincontrol.linux;
 
-import com.liferay.nativity.listeners.MenuItemListener;
+import com.liferay.nativity.plugincontrol.NativityMessage;
 import com.liferay.nativity.plugincontrol.NativityPluginControl;
+import com.liferay.nativity.plugincontrol.win.PluginException;
 
 /**
  * @author Dennis Ju
  */
-public abstract class LinuxNativityPluginControlImpl
-	extends NativityPluginControl {
+public class LinuxNativityPluginControlImpl extends NativityPluginControl {
 
 	@Override
-	public void addMenuItemListener(MenuItemListener menuItemListener) {
+	public void connect() throws PluginException {
 
 		// TODO Auto-generated method stub
 
 	}
 
 	@Override
-	public void disableFileIcons() {
+	public void disconnect() {
 
 		// TODO Auto-generated method stub
 
 	}
 
 	@Override
-	public void enableFileIcons() {
-
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public boolean pluginRunning() {
+	public boolean running() {
 
 		// TODO Auto-generated method stub
 
@@ -53,10 +46,19 @@ public abstract class LinuxNativityPluginControlImpl
 	}
 
 	@Override
-	public void setContextMenuTitle(String title) {
+	public String sendMessage(NativityMessage message) {
 
 		// TODO Auto-generated method stub
 
+		return null;
+	}
+
+	@Override
+	public boolean startPlugin(String path) throws Exception {
+
+		// TODO Auto-generated method stub
+
+		return false;
 	}
 
 }

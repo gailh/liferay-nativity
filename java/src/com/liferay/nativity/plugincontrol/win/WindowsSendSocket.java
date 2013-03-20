@@ -14,6 +14,10 @@
 
 package com.liferay.nativity.plugincontrol.win;
 
+import com.liferay.nativity.plugincontrol.NativityMessage;
+
+import flexjson.JSONSerializer;
+
 import java.io.IOException;
 
 import java.net.Socket;
@@ -35,34 +39,11 @@ public class WindowsSendSocket extends WindowsSocketBase {
 		super(33002);
 	}
 
-	public void send(String command, Object[] values) {
-		StringBuilder value = new StringBuilder();
-		value.append("[");
+	public void send(NativityMessage message) {
+		String command = _jsonSerializer.exclude("*.class").deepSerialize(
+			message);
 
-		for (int i = 0; i < values.length; i++) {
-			if (i > 0) {
-				value.append(",");
-			}
-
-			value.append("\"");
-			value.append(values[i].toString());
-			value.append("\"");
-		}
-
-		value.append("]");
-
-		String message =
-			"{\"command\":\"" + command + "\", \"value\":\"" +
-			value.toString() + "\"}";
-
-		_commands.add(message);
-	}
-
-	public void send(String command, String value) {
-		String message =
-			"{\"command\":\"" + command + "\", \"value\":\"" + value + "\"}";
-
-		_commands.add(message);
+		_commands.add(command);
 	}
 
 	@Override
@@ -110,7 +91,9 @@ public class WindowsSendSocket extends WindowsSocketBase {
 	}
 
 	private static ConcurrentLinkedQueue<String> _commands =
-			new ConcurrentLinkedQueue<String>();
+		new ConcurrentLinkedQueue<String>();
+
+	private static JSONSerializer _jsonSerializer = new JSONSerializer();
 
 	private static Logger _logger = LoggerFactory.getLogger(
 		WindowsSendSocket.class.getName());

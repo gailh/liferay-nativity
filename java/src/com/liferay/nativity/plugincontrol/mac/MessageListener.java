@@ -12,41 +12,16 @@
  * details.
  */
 
-package com.liferay.nativity.plugincontrol.win;
+package com.liferay.nativity.plugincontrol.mac;
 
-import java.util.ArrayList;
-import java.util.List;
+import com.liferay.nativity.plugincontrol.NativityMessage;
 
 /**
- * @author Gail Hernandez
+ * @author Dennis Ju
  */
-public class NativeMessage {
+public abstract class MessageListener {
 
-	public List<String> getArgs() {
-		if (_args == null) {
-			_args = new ArrayList<String>();
-		}
-
-		return _args;
-	}
-
-	public String getCommand() {
-		return _command;
-	}
-
-	public void setArgs(List<String> args) {
-		_args = args;
-	}
-
-	public void setCommand(String command) {
-		_command = command;
-	}
-
-	public String toString() {
-		return "Command " + _command + " " + getArgs().toString();
-	}
-
-	private List<String> _args;
-	private String _command;
+	public abstract NativityMessage onMessageReceived(
+		NativityMessage nativityMessage);
 
 }

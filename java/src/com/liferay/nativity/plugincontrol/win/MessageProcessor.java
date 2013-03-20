@@ -14,7 +14,11 @@
 
 package com.liferay.nativity.plugincontrol.win;
 
+import com.liferay.nativity.plugincontrol.NativityMessage;
+import com.liferay.nativity.plugincontrol.mac.MessageListener;
+
 import flexjson.JSONDeserializer;
+import flexjson.JSONSerializer;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -52,6 +56,7 @@ public class MessageProcessor implements Runnable {
 
 			while (!end) {
 				int item = _inputStreamReader.read();
+
 				if (item == -1) {
 					end = true;
 				}
@@ -78,116 +83,35 @@ public class MessageProcessor implements Runnable {
 		}
 	}
 
-	private String _format(String[] menuItems) {
-		StringBuilder string = new StringBuilder();
-		string.append("{");
-		string.append(_QUOTE);
-		string.append(_RESPONSE);
-		string.append(_QUOTE);
-		string.append(_COLON);
-		string.append("[");
-
-		int i = 0;
-		for (String menu : menuItems) {
-			if (i > 0) {
-				string.append(",");
-			}
-
-			string.append(_QUOTE);
-			string.append(menu);
-			string.append(_QUOTE);
-			i++;
-		}
-
-		string.append("]");
-		string.append("}");
-
-		return string.toString();
-	}
-
-	private String _formatIcon(int icon) {
-		StringBuilder string = new StringBuilder();
-		string.append("{");
-		string.append(_QUOTE);
-		string.append(_RESPONSE);
-		string.append(_QUOTE);
-		string.append(_COLON);
-		string.append(_QUOTE);
-		string.append(String.valueOf(icon));
-		string.append(_QUOTE);
-		string.append("}");
-
-		return string.toString();
-	}
-
-	private String _getString(int argumentNumber, String receivedMessage) {
-		int currentIndex = 0;
-		int tempIndex = 0;
-		int count = 0;
-		while ((tempIndex = receivedMessage.indexOf(",", currentIndex)) != -1) {
-			if (count == argumentNumber) {
-				String temp = receivedMessage.substring(
-					currentIndex, tempIndex);
-
-				return temp;
-			}
-
-			currentIndex = tempIndex;
-			count++;
-		}
-
-		return "";
-	}
-
 	private void _handle(String receivedMessage) throws IOException {
 		_logger.debug("Message {}", receivedMessage);
 
-		JSONDeserializer<NativeMessage> jsonDeserializer =
-			new JSONDeserializer<NativeMessage>();
+		if (_messageListener == null) {
+			return;
+		}
+
+		JSONDeserializer<NativityMessage> jsonDeserializer =
+			new JSONDeserializer<NativityMessage>();
 
 		try {
-			NativeMessage message = jsonDeserializer.deserialize(
-				receivedMessage, NativeMessage.class);
+			NativityMessage message = jsonDeserializer.deserialize(
+				receivedMessage, NativityMessage.class);
 
-			String command = message.getCommand();
-			List<String> args = message.getArgs();
+			List<NativityMessage> results = _plugIn.fireMessageListener(
+				message);
 
-			if (command.contains(_GET_MENU_LIST)) {
-				String[] menuItems = _plugIn.getMenuItems(
-					args.toArray(new String[] {}));
-
-				String response = _format(menuItems);
-				_outputStreamWriter.write(response);
-				_outputStreamWriter.write("\0");
-
-			}
-			else if (command.contains(_GET_HELP_ITEMS)) {
-				String[] helpItems = _plugIn.getHelpItemsForMenus(
-					args.toArray(new String[] {}));
-
-				String response = _format(helpItems);
-				_outputStreamWriter.write(response);
-				_outputStreamWriter.write("\0");
-
-			}
-			else if (command.contains(_PERFORM_ACTION)) {
-				int index = Integer.valueOf(args.get(0));
-				args.remove(0);
-				_plugIn.fireMenuItemExecuted(
-					index, args.toArray(new String[] {}));
-
-				_returnEmpty();
-				return;
-			}
-			else if (command.contains(_GET_FILE_OVERLAY_ID)) {
-				if(args.size() > 0) {
-					String arg1 = args.get(0);
-					int icon = _plugIn.getFileIconForFile(arg1);
-					String response = _formatIcon(icon);
-					_outputStreamWriter.write(response);
+			for (NativityMessage result : results) {
+				if (result == null) {
+					_returnEmpty();
 				}
-			
-				_outputStreamWriter.write("\0");
+				else {
+					String response =
+						_jsonSerializer.exclude("*.class")
+							.deepSerialize(result);
+
+					_outputStreamWriter.write(response);
+					_outputStreamWriter.write("\0");
+				}
 			}
 		}
 		catch (IOException e) {
@@ -196,7 +120,8 @@ public class MessageProcessor implements Runnable {
 		finally {
 
 			// Windows expects null terminated string.
-			if(!_clientSocket.isOutputShutdown()) {
+
+			if (!_clientSocket.isOutputShutdown()) {
 				_outputStreamWriter.close();
 			}
 		}
@@ -224,20 +149,14 @@ public class MessageProcessor implements Runnable {
 		}
 	}
 
-	private static final String _COLON = ":";
+	private static JSONSerializer _jsonSerializer = new JSONSerializer();
 
-	private static final String _GET_FILE_OVERLAY_ID = "getFileOverlayId";
-	private static final String _GET_HELP_ITEMS = "getHelpItemsForMenus";
-	private static final String _GET_MENU_LIST = "getMenuList";
-	private static final String _PERFORM_ACTION = "performAction";
-	private static final String _QUOTE = "\"";
-	private static final String _RESPONSE = "response";
 	private static Logger _logger = LoggerFactory.getLogger(
 		MessageProcessor.class.getName());
 
 	private Socket _clientSocket;
-
 	private InputStreamReader _inputStreamReader;
+	private MessageListener _messageListener;
 	private OutputStreamWriter _outputStreamWriter;
 	private WindowsNativityPluginControlImpl _plugIn;
 

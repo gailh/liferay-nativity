@@ -12,21 +12,28 @@
  * details.
  */
 
-package com.liferay.nativity.listeners;
+package com.liferay.nativity.modules.contextmenu;
+
+import com.liferay.nativity.plugincontrol.NativityPluginControl;
 
 /**
  * @author Dennis Ju
  */
-public interface MenuItemListener {
+public abstract class ContextMenuControlBase {
 
-	/**
-	 * Callback method that executes when user selects custom menu item
-	 *
-	 * @param index of menu item (index in the array returned by previous
-	 *        getMenuItems call)
-	 * @param text of menu item
-	 * @param files array on which context menu item executed
-	 */
-	public void onExecuteMenuItem(int index, String[] paths);
+	public ContextMenuControlBase(NativityPluginControl pluginControl) {
+		this.pluginControl = pluginControl;
+	}
+
+	public abstract String[] getHelpItemsForMenus(String[] paths);
+
+	public abstract String[] getMenuItems(String[] paths);
+
+	public abstract void onExecuteMenuItem(
+		int menuIndex, String menuText, String[] paths);
+
+	public abstract void setContextMenuTitle(String title);
+
+	protected NativityPluginControl pluginControl;
 
 }

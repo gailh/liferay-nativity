@@ -14,62 +14,54 @@
 
 package com.liferay.nativity.plugincontrol;
 
-import com.liferay.nativity.listeners.MenuItemListener;
-import com.liferay.nativity.plugincontrol.win.PlugInException;
+import com.liferay.nativity.modules.contextmenu.ContextMenuControl;
+import com.liferay.nativity.modules.fileicon.FileIconControl;
+import com.liferay.nativity.plugincontrol.mac.MessageListener;
+import com.liferay.nativity.plugincontrol.win.PluginException;
 
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author Dennis Ju
  */
 public abstract class NativityPluginControl {
 
-	/**
-	 * Set the listener that triggers when a context menu opens
-	 *
-	 * @param a MenuItemListener
-	 */
-	public abstract void addMenuItemListener(MenuItemListener menuItemListener);
+	public NativityPluginControl() {
+		_messageListeners = new ArrayList<MessageListener>();
+	}
 
-	public abstract void connect() throws PlugInException;
+	public void addMessageListener(MessageListener messageListener) {
+		_messageListeners.add(messageListener);
+	}
 
-	public abstract void disableFileIcons();
+	public abstract void connect() throws PluginException;
 
 	public abstract void disconnect();
 
-	/**
-	 * Enable/Disable icon overlay feature
-	 *
-	 * @param enable pass true is overlay feature should be enabled
-	 */
-	public abstract void enableFileIcons();
+	public List<NativityMessage> fireMessageListener(NativityMessage message) {
+		List<NativityMessage> responses = new ArrayList<NativityMessage>();
 
-	public abstract void fireMenuItemExecuted(int index, String[] paths);
-	public abstract String[] getMenuItems(String[] paths);
+		for (MessageListener messageListener : _messageListeners) {
+			NativityMessage responseMessage = messageListener.onMessageReceived(
+				message);
 
-	/**
-	 * Check to see if the plugin is running
-	 *
-	 * @return true if plugin is running
-	 */
-	public abstract boolean pluginRunning();
+			responses.add(responseMessage);
+		}
 
-	public abstract void removeFileIcon(String fileName);
+		return responses;
+	}
 
-	public abstract void removeFileIcons(String[] fileNames);
+	public abstract boolean running();
 
-	/**
-	 * Set title of root context menu item, all other items will be added as
-	 * children of it
-	 *
-	 * @param new title of item
-	 */
-	public abstract void setContextMenuTitle(String title);
+	public abstract String sendMessage(NativityMessage message);
 
-	public abstract void setIconForFile(String fileName, int iconId);
+	public abstract boolean startPlugin(String path) throws Exception;
 
-	public abstract void setIconsForFiles(Map<String, Integer> fileIconsMap);
+	protected ContextMenuControl contextMenuControl;
 
-	public abstract void setRootFolder(String folder);
+	protected FileIconControl fileIconControl;
+
+	private List<MessageListener> _messageListeners;
 
 }

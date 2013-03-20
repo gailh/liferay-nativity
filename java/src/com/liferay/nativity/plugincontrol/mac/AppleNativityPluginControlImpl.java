@@ -14,32 +14,34 @@
 
 package com.liferay.nativity.plugincontrol.mac;
 
-import com.liferay.nativity.listeners.MenuItemListener;
 import com.liferay.nativity.listeners.SocketCloseListener;
+import com.liferay.nativity.plugincontrol.NativityMessage;
 import com.liferay.nativity.plugincontrol.NativityPluginControl;
+
+import flexjson.JSONDeserializer;
+import flexjson.JSONSerializer;
+import flexjson.ObjectBinder;
+import flexjson.ObjectFactory;
 
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
+import java.lang.reflect.Type;
+
 import java.net.Socket;
 
-import java.util.Map.Entry;
-import java.util.Map;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+//import com.liferay.nativity.modules.contextmenu.MenuItemListener;
 
 /**
  * @author Dennis Ju
  */
-public abstract class AppleNativityPluginControlImpl
-	extends NativityPluginControl {
-
-	public void addMenuItemListener(MenuItemListener menuItemListener) {
-		_menuItemListener = menuItemListener;
-	}
+public class AppleNativityPluginControlImpl extends NativityPluginControl {
 
 	public void connect() {
 		try {
@@ -64,17 +66,10 @@ public abstract class AppleNativityPluginControlImpl
 			_callbackThread.start();
 		}
 		catch (IOException e) {
-			return;
+			_logger.error(e.getMessage(), e);
 		}
 
 		return;
-	}
-
-	@Override
-	public void disableFileIcons() {
-		String command = "enableOverlays:" + "0";
-
-		_sendCommand(command);
 	}
 
 	public void disconnect() {
@@ -82,21 +77,14 @@ public abstract class AppleNativityPluginControlImpl
 			_serviceSocket.close();
 		}
 		catch (IOException e) {
-			return;
+			_logger.error(e.getMessage(), e);
 		}
 
 		return;
 	}
 
 	@Override
-	public void enableFileIcons() {
-		String command = "enableOverlays:" + "1";
-
-		_sendCommand(command);
-	}
-
-	@Override
-	public boolean pluginRunning() {
+	public boolean running() {
 		boolean running = false;
 
 		try {
@@ -117,6 +105,7 @@ public abstract class AppleNativityPluginControlImpl
 			bufferedReader.close();
 		}
 		catch (Exception e) {
+			_logger.error(e.getMessage(), e);
 		}
 
 		_logger.trace("Finder plugin helper running: {}", running);
@@ -124,74 +113,30 @@ public abstract class AppleNativityPluginControlImpl
 		return running;
 	}
 
-	public int registerIcon(String path) {
-		String command = "registerIcon:" + path;
-
-		String reply = _sendCommand(command);
-
-		return Integer.parseInt(reply);
-	}
-
-	public void removeFileIcon(String fileName) {
-		String command = "removeFileIcon:" + fileName;
-
-		_sendCommand(command);
-	}
-
-	public void removeFileIcons(String[] fileNames) {
-		StringBuilder sb = new StringBuilder();
-
-		sb.append("removeFileIcons");
-
-		for (String fileName : fileNames) {
-			sb.append(":");
-			sb.append(fileName);
-		}
-
-		_sendCommand(sb.toString());
-	}
-
 	@Override
-	public void setContextMenuTitle(String title) {
-		String command = "setMenuTitle:" + title;
+	public String sendMessage(NativityMessage message) {
+		String command = _jsonSerializer.exclude("*.class").deepSerialize(
+			message);
 
-		_sendCommand(command);
-	}
+		try {
+			command += "\r\n";
 
-	public void setIconForFile(String fileName, int iconId) {
-		String command = "setFileIcon:" + fileName + ":" + iconId;
+			_serviceOutputStream.writeBytes(command);
 
-		_sendCommand(command);
-	}
+			String reply = _serviceBufferedReader.readLine();
 
-	public void setIconsForFiles(Map<String, Integer> fileIconsMap) {
-		StringBuilder sb = new StringBuilder();
+			if (reply == null) {
+				_serviceSocket.close();
 
-		sb.append("setFileIcons");
-
-		int i = 0;
-
-		for (Entry<String, Integer> entry : fileIconsMap.entrySet()) {
-			sb.append(":");
-			sb.append(entry.getKey());
-			sb.append(":");
-			sb.append(entry.getValue());
-
-			i++;
-
-			if (i == _messageBufferSize) {
-				_sendCommand(sb.toString());
-
-				sb = new StringBuilder();
-
-			sb.append("setFileIcons");
-
-				i = 0;
+				_socketCloseListener.onSocketClose();
 			}
-		}
 
-		if (i > 0) {
-			_sendCommand(sb.toString());
+			return reply;
+		}
+		catch (IOException e) {
+			_logger.error(e.getMessage(), e);
+
+			return "";
 		}
 	}
 
@@ -201,6 +146,7 @@ public abstract class AppleNativityPluginControlImpl
 		_socketCloseListener = socketCloseListener;
 	}
 
+	@Override
 	public boolean startPlugin(String path) throws Exception {
 		_logger.trace("Starting Finder plugin helper");
 
@@ -240,12 +186,6 @@ public abstract class AppleNativityPluginControlImpl
 		return true;
 	}
 
-	public void unregisterIcon(int id) {
-		String command = "unregisterIcon:" + id;
-
-		_sendCommand(command);
-	}
-
 	protected class ReadThread extends Thread {
 
 		public ReadThread(AppleNativityPluginControlImpl pluginControl) {
@@ -274,86 +214,47 @@ public abstract class AppleNativityPluginControlImpl
 					break;
 				}
 
-				if (data.startsWith("menuQuery:") &&
-					(_menuItemListener != null)) {
+				ObjectFactory objectFactory = new ObjectFactory() {
+					@Override
+					public Object instantiate(
+						ObjectBinder context, Object value, Type targetType,
+						Class targetClass) {
 
-					String currentFiles = data.substring(10, data.length());
+						return value;
+					}
+				};
 
-					_currentFiles = currentFiles.split(":");
+				JSONDeserializer<NativityMessage> _messageJSONDeserializer =
+					new JSONDeserializer<NativityMessage>().use(
+						"value", objectFactory);
 
-//					String[] items = _menuItemListener.onPopulateMenuItems(
-//						_currentFiles);
+				NativityMessage message = _messageJSONDeserializer.deserialize(
+					data, NativityMessage.class);
 
-					String itemsStr = new String();
+				List<NativityMessage> results = fireMessageListener(message);
 
-//					if (items != null) {
-//						for (int i=0; i<items.length; ++i) {
-//							if (i > 0) {
-//								itemsStr += ":";
-//							}
-//
-//							itemsStr += items[i];
-//						}
-//					}
-
-					_callbackOutputStream.writeBytes(itemsStr + "\r\n");
-				}
-
-				if (data.startsWith("menuExec:") &&
-					(_menuItemListener != null)) {
-
-					int titleIndex = data.indexOf(":", 9);
-
-					int menuIndex = Integer.parseInt(
-						data.substring(9, titleIndex));
-
-					String menuText = data.substring(titleIndex + 1);
-
-//					_menuItemListener.onExecuteMenuItem(
-//						menuIndex, menuText, _currentFiles);
+				for (NativityMessage result : results) {
+					_callbackOutputStream.writeBytes(
+						_jsonSerializer.exclude("*.class")
+							.deepSerialize(result) + "\r\n");
 				}
 			}
-			catch (IOException e) {
+			catch (IOException ioe) {
+				_logger.error(ioe.getMessage(), ioe);
 			}
-		}
-	}
-
-	private String _sendCommand(String command) {
-		try {
-			command += "\r\n";
-
-			_serviceOutputStream.writeBytes(command);
-
-			String reply = _serviceBufferedReader.readLine();
-
-			if (reply == null) {
-				_serviceSocket.close();
-
-				_socketCloseListener.onSocketClose();
-			}
-
-			return reply;
-		}
-		catch (IOException e) {
-			return null;
 		}
 	}
 
 	private static int _callbackSocketPort = 33002;
-
+	private static JSONSerializer _jsonSerializer = new JSONSerializer();
 	private static Logger _logger = LoggerFactory.getLogger(
 		AppleNativityPluginControlImpl.class.getName());
-
-	private static long _messageBufferSize = 500;
-
 	private static int _serviceSocketPort = 33001;
 
 	private BufferedReader _callbackBufferedReader;
 	private DataOutputStream _callbackOutputStream;
 	private Socket _callbackSocket;
 	private ReadThread _callbackThread;
-	private String[] _currentFiles;
-	private MenuItemListener _menuItemListener;
 	private BufferedReader _serviceBufferedReader;
 	private DataOutputStream _serviceOutputStream;
 	private Socket _serviceSocket;
