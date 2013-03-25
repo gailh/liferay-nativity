@@ -14,11 +14,9 @@
 
 package com.liferay.nativity.plugincontrol.linux;
 
-import com.liferay.nativity.listeners.MenuItemListener;
-import com.liferay.nativity.listeners.SocketCloseListener;
+import com.liferay.nativity.plugincontrol.NativityMessage;
 import com.liferay.nativity.plugincontrol.NativityPluginControl;
-
-import java.util.Map;
+import com.liferay.nativity.plugincontrol.win.PluginException;
 
 /**
  * @author Dennis Ju
@@ -26,7 +24,21 @@ import java.util.Map;
 public class LinuxNativityPluginControlImpl extends NativityPluginControl {
 
 	@Override
-	public boolean connect() {
+	public void connect() throws PluginException {
+
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void disconnect() {
+
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public boolean running() {
 
 		// TODO Auto-generated method stub
 
@@ -34,99 +46,19 @@ public class LinuxNativityPluginControlImpl extends NativityPluginControl {
 	}
 
 	@Override
-	public boolean disconnect() {
+	public String sendMessage(NativityMessage message) {
+
+		// TODO Auto-generated method stub
+
+		return null;
+	}
+
+	@Override
+	public boolean startPlugin(String path) throws Exception {
 
 		// TODO Auto-generated method stub
 
 		return false;
-	}
-
-	@Override
-	public void enableOverlays(boolean enable) {
-
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public boolean pluginRunning() {
-
-		// TODO Auto-generated method stub
-
-		return false;
-	}
-
-	@Override
-	public int registerIcon(String path) {
-
-		// TODO Auto-generated method stub
-
-		return 0;
-	}
-
-	@Override
-	public void removeFileIcon(String fileName) {
-
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void removeFileIcons(String[] fileNames) {
-
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void setContextMenuTitle(String title) {
-
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void setIconForFile(String fileName, int iconId) {
-
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void setIconsForFiles(Map<String, Integer> fileIconsMap) {
-
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void setMenuItemListener(MenuItemListener menuItemListener) {
-
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void setSocketCloseListener(
-		SocketCloseListener finderCrashListener) {
-
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public boolean startPlugin(String path) {
-
-		// TODO Auto-generated method stub
-
-		return false;
-	}
-
-	@Override
-	public void unregisterIcon(int id) {
-
-		// TODO Auto-generated method stub
-
 	}
 
 }
