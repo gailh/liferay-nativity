@@ -76,14 +76,6 @@ public abstract class FileIconControl {
 		_fileIconControlBaseDelegate.setIconsForFiles(fileIconsMap);
 	}
 
-	public void setRootFolder(String folder) {
-		_fileIconControlBaseDelegate.setRootFolder(folder);
-	}
-
-	public void setSystemFolder(String folder) {
-		_fileIconControlBaseDelegate.setSystemFolder(folder);
-	}
-
 	public void unregisterIcon(int id) {
 		_fileIconControlBaseDelegate.unregisterIcon(id);
 	}

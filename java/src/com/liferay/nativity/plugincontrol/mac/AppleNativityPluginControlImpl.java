@@ -14,6 +14,7 @@
 
 package com.liferay.nativity.plugincontrol.mac;
 
+import com.liferay.nativity.Constants;
 import com.liferay.nativity.listeners.SocketCloseListener;
 import com.liferay.nativity.plugincontrol.NativityMessage;
 import com.liferay.nativity.plugincontrol.NativityPluginControl;
@@ -126,7 +127,9 @@ public class AppleNativityPluginControlImpl extends NativityPluginControl {
 			if (reply == null) {
 				_serviceSocket.close();
 
-				_socketCloseListener.onSocketClose();
+				if (_socketCloseListener != null) {
+					_socketCloseListener.onSocketClose();
+				}
 			}
 
 			return reply;
@@ -138,10 +141,22 @@ public class AppleNativityPluginControlImpl extends NativityPluginControl {
 		}
 	}
 
+	@Override
+	public void setRootFolder(String folder) {
+		NativityMessage message = new NativityMessage(
+			Constants.SET_ROOT_FOLDER, folder);
+
+		sendMessage(message);
+	}
+
 	public void setSocketCloseListener(
 		SocketCloseListener socketCloseListener) {
 
 		_socketCloseListener = socketCloseListener;
+	}
+
+	@Override
+	public void setSystemFolder(String folder) {
 	}
 
 	@Override
@@ -207,7 +222,9 @@ public class AppleNativityPluginControlImpl extends NativityPluginControl {
 				if (data == null) {
 					_callbackSocket.close();
 
-					_socketCloseListener.onSocketClose();
+					if (_socketCloseListener != null) {
+						_socketCloseListener.onSocketClose();
+					}
 
 					break;
 				}
