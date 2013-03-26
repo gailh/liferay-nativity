@@ -14,12 +14,14 @@
 
 package com.liferay.nativity.plugincontrol.win;
 
-import com.liferay.nativity.listeners.MenuItemListener;
-import com.liferay.nativity.listeners.SocketCloseListener;
+import com.liferay.nativity.plugincontrol.NativityMessage;
 import com.liferay.nativity.plugincontrol.NativityPluginControl;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Dennis Ju
@@ -27,115 +29,55 @@ import java.util.Map;
 public class WindowsNativityPluginControlImpl extends NativityPluginControl {
 
 	@Override
-	public boolean connect() {
+	public void connect() throws PluginException {
+		_logger.debug("Connecting...");
+
+		if (running()) {
+			throw new PluginException(PluginException.ALREADY_CONNECTED);
+		}
+
+		_receive = new WindowsReceiveSocket(this);
+
+		_receiveExecutor.execute(_receive);
+		_sendExecutor.execute(_send);
+
+		_logger.debug("Done connecting");
+	}
+
+	public void disconnect() {
+
+	}
+
+	@Override
+	public boolean running() {
+		return _send.isConnected();
+	}
+
+	@Override
+	public String sendMessage(NativityMessage message) {
+		_send.send(message);
+
+		return "";
+	}
+
+	@Override
+	public boolean startPlugin(String path) throws Exception {
 
 		// TODO Auto-generated method stub
 
 		return false;
 	}
 
-	@Override
-	public boolean disconnect() {
+	private static Logger _logger = LoggerFactory.getLogger(
+		WindowsNativityPluginControlImpl.class.getName());
 
-		// TODO Auto-generated method stub
+	private WindowsReceiveSocket _receive;
 
-		return false;
-	}
+	private ExecutorService _receiveExecutor =
+		Executors.newSingleThreadExecutor();
 
-	@Override
-	public void enableOverlays(boolean enable) {
+	private WindowsSendSocket _send = new WindowsSendSocket();
 
-		// TODO Auto-generated method stub
-
-	}
-
-	public int getIconForFile(String fileName) {
-		return _fileIconMap.remove(fileName);
-	}
-
-	@Override
-	public boolean pluginRunning() {
-
-		// TODO Auto-generated method stub
-
-		return false;
-	}
-
-	public void refreshIconForFile(String fileName) {
-
-		// TODO
-
-	}
-
-	@Override
-	public int registerIcon(String path) {
-
-		// TODO Auto-generated method stub
-
-		return 0;
-	}
-
-	@Override
-	public void removeFileIcon(String fileName) {
-
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void removeFileIcons(String[] fileNames) {
-
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void setContextMenuTitle(String title) {
-
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void setIconForFile(String fileName, int iconId) {
-		_fileIconMap.put(fileName, iconId);
-	}
-
-	@Override
-	public void setIconsForFiles(Map<String, Integer> fileIconsMap) {
-		_fileIconMap.putAll(fileIconsMap);
-	}
-
-	@Override
-	public void setMenuItemListener(MenuItemListener menuItemListener) {
-
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void setSocketCloseListener(
-		SocketCloseListener finderCrashListener) {
-
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public boolean startPlugin(String path) {
-
-		// TODO Auto-generated method stub
-
-		return false;
-	}
-
-	@Override
-	public void unregisterIcon(int id) {
-
-		// TODO Auto-generated method stub
-
-	}
-
-	private Map<String, Integer> _fileIconMap = new HashMap<String, Integer>();
+	private ExecutorService _sendExecutor = Executors.newSingleThreadExecutor();
 
 }

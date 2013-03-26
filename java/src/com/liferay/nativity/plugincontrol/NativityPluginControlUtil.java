@@ -24,27 +24,28 @@ import com.liferay.util.OSDetector;
  */
 public class NativityPluginControlUtil {
 
-	public static NativityPluginControl getPluginControl() {
-		if (_pluginControl == null) {
-			if (OSDetector.isMinimumAppleVersion(
-					OSDetector.MAC_SNOW_LEOPARD_10_6)) {
-
-				_pluginControl = new AppleNativityPluginControlImpl();
+	public static NativityPluginControl getNativityPluginControl() {
+		if (_nativityPluginControl == null) {
+			if (OSDetector.isApple()) {
+				_nativityPluginControl = new AppleNativityPluginControlImpl();
 			}
-			else if (OSDetector.isMinimumWindowsVersion(OSDetector.WIN_VISTA)) {
-				_pluginControl = new WindowsNativityPluginControlImpl();
+			else if (OSDetector.isWindows()) {
+				_nativityPluginControl = new WindowsNativityPluginControlImpl();
 			}
-			else if (OSDetector.isUnix()) {
-				_pluginControl = new LinuxNativityPluginControlImpl();
+			else if (OSDetector.isUnix()) { //fix for Linux
+				_nativityPluginControl = new LinuxNativityPluginControlImpl();
 			}
 			else {
-				return null;
+
+				// log error
+
+				_nativityPluginControl = null;
 			}
 		}
 
-		return _pluginControl;
+		return _nativityPluginControl;
 	}
 
-	private static NativityPluginControl _pluginControl;
+	private static NativityPluginControl _nativityPluginControl;
 
 }

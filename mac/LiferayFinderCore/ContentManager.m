@@ -18,39 +18,36 @@
 #import <AppKit/NSWindow.h>
 #import <Carbon/Carbon.h>
 
-
 static ContentManager* sharedInstance = nil;
 
-OSStatus SendFinderSyncEvent( const FSRef* inObjectRef )
+OSStatus SendFinderSyncEvent(const FSRef* inObjectRef)
 {
-    AppleEvent  theEvent = { typeNull, NULL };
-    AppleEvent  replyEvent = { typeNull, NULL };
-    AliasHandle itemAlias = NULL;
+	AppleEvent theEvent = { typeNull, NULL };
+	AppleEvent replyEvent = { typeNull, NULL };
+	AliasHandle itemAlias = NULL;
 
-    OSStatus err = FSNewAliasMinimal( inObjectRef, &itemAlias );
+	OSStatus err = FSNewAliasMinimal(inObjectRef, &itemAlias);
 
-    if (err == noErr)
-    {
-        ProcessSerialNumber psn = { 0, kCurrentProcess };
-        pid_t pid;
-        GetProcessPID(&psn, &pid);
+	if (err == noErr)
+	{
+		ProcessSerialNumber psn = { 0, kCurrentProcess };
+		pid_t pid;
+		GetProcessPID(&psn, &pid);
 
-        err = AEBuildAppleEvent( kAEFinderSuite, kAESync, typeKernelProcessID,
-                                &pid, sizeof(pid), kAutoGenerateReturnID,
-                                kAnyTransactionID, &theEvent, NULL, "'----':alis(@@)", itemAlias );
-        
-        if (err == noErr)
-        {
-            err = AESendMessage( &theEvent, &replyEvent, kAENoReply, kAEDefaultTimeout );
+		err = AEBuildAppleEvent(kAEFinderSuite, kAESync, typeKernelProcessID, &pid, sizeof(pid), kAutoGenerateReturnID, kAnyTransactionID, &theEvent, NULL, "'----':alis(@@)", itemAlias);
 
-            AEDisposeDesc( &replyEvent );
-            AEDisposeDesc( &theEvent );
-        }
-        
-        DisposeHandle( (Handle)itemAlias );
-    }
-    
-    return err;
+		if (err == noErr)
+		{
+			err = AESendMessage(&theEvent, &replyEvent, kAENoReply, kAEDefaultTimeout);
+
+			AEDisposeDesc(&replyEvent);
+			AEDisposeDesc(&theEvent);
+		}
+
+		DisposeHandle((Handle)itemAlias);
+	}
+
+	return err;
 }
 
 @implementation ContentManager
@@ -60,105 +57,102 @@ OSStatus SendFinderSyncEvent( const FSRef* inObjectRef )
 	{
 		fileNamesCache_ = [[NSMutableDictionary alloc] init];
 		currentId_ = 0;
-        overlaysEnabled_ = FALSE;
-	};
-	
+		overlaysEnabled_ = FALSE;
+	}
+
 	return self;
 }
 
-+ (ContentManager*)sharedInstance 
++ (ContentManager*)sharedInstance
 {
-    @synchronized(self) 
+	@synchronized(self)
 	{
-        if (sharedInstance == nil) 
+		if (sharedInstance == nil)
 		{
-            sharedInstance = [[self alloc] init];
-        }
-    }
-    return sharedInstance;
+			sharedInstance = [[self alloc] init];
+		}
+	}
+
+	return sharedInstance;
 }
 
--(NSNumber*) iconByPath : (NSString*) path
+- (void)enableOverlays:(BOOL)enable
 {
-    if (!overlaysEnabled_)
-        return nil;
-    
-    NSNumber* result = [fileNamesCache_ objectForKey:path];    
-    return result;
+	overlaysEnabled_ = enable;
+
+	[self repaintAllWindows];
 }
 
--(void) repaintAllWindows
+- (NSNumber*)iconByPath:(NSString*)path
 {
-    NSArray* windows = [[NSApplication sharedApplication] windows];
+	if (!overlaysEnabled_)
+	{
+		return nil;
+	}
 
-    for (int i=0;i<[windows count];++i)
-    {
-        NSWindow* window = [windows objectAtIndex:i];
+	NSNumber* result = [fileNamesCache_ objectForKey:path];
 
-        [window update];
-        
-        if ([[window className] isEqualToString:@"TBrowserWindow"])
-        {
-            NSObject* controller = [window browserWindowController];
-            
-            [controller updateViewLayout];
-            [controller viewContentChanged];
-            [controller drawCompletelyIntoBackBuffer];
-        }
-    }
+	return result;
 }
 
--(void) notifyFileChanged : (NSString*) path
+- (void)notifyFileChanged:(NSString*)path
 {
-    FSRef ref;
-    CFURLGetFSRef((CFURLRef)[NSURL fileURLWithPath: path], &ref);
-    SendFinderSyncEvent(&ref);
-    
-    [[NSWorkspace sharedWorkspace] noteFileSystemChanged:path];
+	FSRef ref;
+
+	CFURLGetFSRef((CFURLRef)[NSURL fileURLWithPath: path], &ref);
+	SendFinderSyncEvent(&ref);
+
+	[[NSWorkspace sharedWorkspace] noteFileSystemChanged:path];
 }
 
-
--(void) enableOverlays : (BOOL) enable
+- (void)removeAllIcons
 {
-    overlaysEnabled_ = enable;
-    
-    for (int i=0;i<[fileNamesCache_ count]; ++i)
-    {
-         //[self notifyFileChanged: [fileNamesCache_ object]]
-    }
-    
-    [self repaintAllWindows];
+	[fileNamesCache_ removeAllObjects];
+
+	[self repaintAllWindows];
 }
 
--(void) setIcon : (NSNumber*) icon forFile : (NSString*) path
+- (void)removeIcons:(NSArray*)paths
 {
-    NSDictionary* iconDictionary = [[NSMutableDictionary alloc] init];
-    [iconDictionary setValue:icon forKey:path];
+	for (NSString* path in paths)
+	{
+		[fileNamesCache_ removeObjectForKey:path];
+	}
 
-    [self setIcons:iconDictionary];
+	[self repaintAllWindows];
 }
 
-
--(void) setIcons : (NSDictionary*) iconDictionary
+- (void)repaintAllWindows
 {
-    for (NSString* path in iconDictionary)
-    {
-        NSNumber* iconId = [iconDictionary objectForKey:path];
+	NSArray* windows = [[NSApplication sharedApplication] windows];
 
-        [fileNamesCache_ setObject:iconId forKey:path];
+	for (int i = 0; i < [windows count]; ++i)
+	{
+		NSWindow* window = [windows objectAtIndex:i];
 
-        [self notifyFileChanged: path];
-    }
+		[window update];
 
-    [self repaintAllWindows];
+		if ([[window className] isEqualToString:@"TBrowserWindow"])
+		{
+			NSObject* controller = [window browserWindowController];
+
+			[controller updateViewLayout];
+			[controller viewContentChanged];
+			[controller drawCompletelyIntoBackBuffer];
+		}
+	}
 }
 
--(void) removeIconFromFile : (NSString*) path
+- (void)setIcons:(NSDictionary*)iconDictionary
 {
-    [fileNamesCache_ removeObjectForKey:path];
+	for (NSString* path in iconDictionary)
+	{
+		NSNumber* iconId = [iconDictionary objectForKey:path];
 
-    [self notifyFileChanged: path];
-    [self repaintAllWindows];
+		[fileNamesCache_ setObject:iconId forKey:path];
+	}
+
+	[self repaintAllWindows];
 }
 
 @end
