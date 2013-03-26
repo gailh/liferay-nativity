@@ -130,14 +130,6 @@ public abstract class AppleFileIconControlImpl extends FileIconControlBase {
 	}
 
 	@Override
-	public void setRootFolder(String folder) {
-	}
-
-	@Override
-	public void setSystemFolder(String folder) {
-	}
-
-	@Override
 	public void unregisterIcon(int id) {
 		NativityMessage message = new NativityMessage(
 			Constants.UNREGISTER_ICON, id);

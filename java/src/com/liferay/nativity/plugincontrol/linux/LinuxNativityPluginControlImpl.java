@@ -54,6 +54,20 @@ public class LinuxNativityPluginControlImpl extends NativityPluginControl {
 	}
 
 	@Override
+	public void setRootFolder(String folder) {
+
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void setSystemFolder(String folder) {
+
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
 	public boolean startPlugin(String path) throws Exception {
 
 		// TODO Auto-generated method stub

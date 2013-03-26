@@ -14,6 +14,7 @@
 
 package com.liferay.nativity.plugincontrol.win;
 
+import com.liferay.nativity.Constants;
 import com.liferay.nativity.plugincontrol.NativityMessage;
 import com.liferay.nativity.plugincontrol.NativityPluginControl;
 
@@ -58,6 +59,22 @@ public class WindowsNativityPluginControlImpl extends NativityPluginControl {
 		_send.send(message);
 
 		return "";
+	}
+
+	@Override
+	public void setRootFolder(String folder) {
+		NativityMessage message = new NativityMessage(
+			Constants.SET_ROOT_FOLDER, folder);
+
+		sendMessage(message);
+	}
+
+	@Override
+	public void setSystemFolder(String folder) {
+		NativityMessage message = new NativityMessage(
+			Constants.SET_SYSTEM_FOLDER, folder);
+
+		sendMessage(message);
 	}
 
 	@Override

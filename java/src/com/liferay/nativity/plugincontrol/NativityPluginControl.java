@@ -49,6 +49,10 @@ public abstract class NativityPluginControl {
 
 	public abstract String sendMessage(NativityMessage message);
 
+	public abstract void setRootFolder(String folder);
+
+	public abstract void setSystemFolder(String folder);
+
 	public abstract boolean startPlugin(String path) throws Exception;
 
 	protected ContextMenuControl contextMenuControl;

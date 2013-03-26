@@ -45,10 +45,6 @@ public abstract class FileIconControlBase {
 
 	public abstract void setIconsForFiles(Map<String, Integer> fileIconsMap);
 
-	public abstract void setRootFolder(String folder);
-
-	public abstract void setSystemFolder(String folder);
-
 	public abstract void unregisterIcon(int id);
 
 	protected NativityPluginControl pluginControl;

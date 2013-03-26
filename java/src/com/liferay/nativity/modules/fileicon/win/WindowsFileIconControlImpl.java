@@ -114,22 +114,6 @@ public abstract class WindowsFileIconControlImpl extends FileIconControlBase {
 	}
 
 	@Override
-	public void setRootFolder(String folder) {
-		NativityMessage message = new NativityMessage(
-			Constants.SET_ROOT_FOLDER, folder);
-
-		pluginControl.sendMessage(message);
-	}
-
-	@Override
-	public void setSystemFolder(String folder) {
-		NativityMessage message = new NativityMessage(
-			Constants.SET_SYSTEM_FOLDER, folder);
-
-		pluginControl.sendMessage(message);
-	}
-
-	@Override
 	public void unregisterIcon(int id) {
 	}
 
