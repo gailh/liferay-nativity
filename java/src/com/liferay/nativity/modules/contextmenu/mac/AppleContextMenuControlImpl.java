@@ -65,7 +65,7 @@ public abstract class AppleContextMenuControlImpl
 					(String[])_currentFiles.toArray(
 						new String[_currentFiles.size()]);
 
-				onExecuteMenuItem(menuIndex, menuText, currentFiles);
+				fireExecuteMenuItemListeners(menuIndex, menuText, currentFiles);
 
 				return null;
 			}

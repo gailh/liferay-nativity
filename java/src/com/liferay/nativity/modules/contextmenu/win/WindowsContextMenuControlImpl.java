@@ -75,7 +75,7 @@ public abstract class WindowsContextMenuControlImpl
 				args.remove(0);
 
 				//TODO pass title
-				onExecuteMenuItem(
+				fireExecuteMenuItemListeners(
 					index, "", args.toArray(new String[args.size()]));
 
 				return null;
