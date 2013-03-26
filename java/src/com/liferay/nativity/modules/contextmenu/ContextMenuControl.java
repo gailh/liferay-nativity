@@ -15,6 +15,7 @@
 package com.liferay.nativity.modules.contextmenu;
 
 import com.liferay.nativity.Constants;
+import com.liferay.nativity.modules.contextmenu.listeners.ExecuteMenuItemListener;
 import com.liferay.nativity.modules.contextmenu.mac.AppleContextMenuControlImpl;
 import com.liferay.nativity.modules.contextmenu.win.WindowsContextMenuControlImpl;
 import com.liferay.nativity.plugincontrol.NativityMessage;
@@ -41,6 +42,13 @@ public abstract class ContextMenuControl {
 		}
 	}
 
+	public void addExecuteMenuItemListener(
+		ExecuteMenuItemListener executeMenuItemListener) {
+
+		_contextMenuControlBaseDelegate.addExecuteMenuItemListener(
+			executeMenuItemListener);
+	}
+
 	/**
 	 * Set the listener that triggers when a context menu opens
 	 *
@@ -52,10 +60,17 @@ public abstract class ContextMenuControl {
 
 	public abstract String[] getMenuItems(String[] paths);
 
-	// Windows
+	public void removeAllExecuteMenuItemListeners() {
 
-	public abstract void onExecuteMenuItem(
-		int menuIndex, String menuText, String[] paths);
+		_contextMenuControlBaseDelegate.removeAllExecuteMenuItemListeners();
+	}
+
+	public void removeExecuteMenuItemListener(
+		ExecuteMenuItemListener executeMenuItemListener) {
+
+		_contextMenuControlBaseDelegate.removeExecuteMenuItemListener(
+			executeMenuItemListener);
+	}
 
 	/**
 	 * Set title of root context menu item, all other items will be added as
@@ -82,13 +97,6 @@ public abstract class ContextMenuControl {
 			}
 
 			@Override
-			public void onExecuteMenuItem(
-				int menuIndex, String menuText, String[] paths) {
-				ContextMenuControl.this.onExecuteMenuItem(
-					menuIndex, menuText, paths);
-			}
-
-			@Override
 			public String[] getHelpItemsForMenus(String[] paths) {
 				return ContextMenuControl.this.getMenuItems(paths);
 			}
@@ -105,14 +113,6 @@ public abstract class ContextMenuControl {
 			public String[] getMenuItems(String[] paths) {
 
 				return ContextMenuControl.this.getMenuItems(paths);
-			}
-
-			@Override
-			public void onExecuteMenuItem(
-				int menuIndex, String menuText, String[] paths) {
-
-				ContextMenuControl.this.onExecuteMenuItem(
-					menuIndex, menuText, paths);
 			}
 
 			@Override
