@@ -31,44 +31,58 @@ public abstract class WindowsContextMenuControlImpl
 	public WindowsContextMenuControlImpl(NativityPluginControl pluginControl) {
 		super(pluginControl);
 
-		MessageListener messageListener = new MessageListener() {
+		MessageListener getMenuListMessageListener = new MessageListener(
+			Constants.GET_MENU_LIST) {
+
 			@Override
 			public NativityMessage onMessageReceived(NativityMessage message) {
 				List<String> args = (List<String>)message.getValue();
 
-				String command = message.getCommand();
+				String[] menuItems = getMenuItems(
+					args.toArray(new String[args.size()]));
 
-				if (command.equals(Constants.GET_MENU_LIST)) {
-					String[] menuItems = getMenuItems(
-						args.toArray(new String[args.size()]));
+				return new NativityMessage(Constants.GET_MENU_LIST, menuItems);
+			}
+		};
 
-					return new NativityMessage(
-						Constants.GET_MENU_LIST, menuItems);
-				}
-				else if (command.equals(Constants.GET_HELP_ITEMS)) {
-					String[] helpItems = getHelpItemsForMenus(
-						args.toArray(new String[args.size()]));
+		pluginControl.registerMessageListener(getMenuListMessageListener);
 
-					return new NativityMessage(
-						Constants.GET_HELP_ITEMS, helpItems);
-				}
-				else if (command.equals(Constants.PERFORM_ACTION)) {
-					int index = Integer.valueOf(args.get(0));
+		MessageListener getHelpItemsMessageListener = new MessageListener(
+			Constants.GET_HELP_ITEMS) {
 
-					args.remove(0);
+			@Override
+			public NativityMessage onMessageReceived(NativityMessage message) {
+				List<String> args = (List<String>)message.getValue();
 
-					//TODO pass title
-					onExecuteMenuItem(
-						index, "", args.toArray(new String[args.size()]));
+				String[] helpItems = getHelpItemsForMenus(
+					args.toArray(new String[args.size()]));
 
-					return null;
-				}
+				return new NativityMessage(Constants.GET_HELP_ITEMS, helpItems);
+			}
+		};
+
+		pluginControl.registerMessageListener(getHelpItemsMessageListener);
+
+		MessageListener performActionMessageListener = new MessageListener(
+			Constants.PERFORM_ACTION) {
+
+			@Override
+			public NativityMessage onMessageReceived(NativityMessage message) {
+				List<String> args = (List<String>)message.getValue();
+
+				int index = Integer.valueOf(args.get(0));
+
+				args.remove(0);
+
+				//TODO pass title
+				onExecuteMenuItem(
+					index, "", args.toArray(new String[args.size()]));
 
 				return null;
 			}
 		};
 
-		pluginControl.addMessageListener(messageListener);
+		pluginControl.registerMessageListener(performActionMessageListener);
 	}
 
 	@Override

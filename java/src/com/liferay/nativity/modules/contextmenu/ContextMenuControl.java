@@ -24,10 +24,10 @@ import com.liferay.util.OSDetector;
 /**
  * @author Dennis Ju
  */
-public abstract class ContextMenuControl extends ContextMenuControlBase {
+public abstract class ContextMenuControl {
 
 	public ContextMenuControl(NativityPluginControl pluginControl) {
-		super(pluginControl);
+		_pluginControl = pluginControl;
 
 		if (_contextMenuControlBaseDelegate == null) {
 			if (OSDetector.isApple()) {
@@ -48,8 +48,6 @@ public abstract class ContextMenuControl extends ContextMenuControlBase {
 	 *            MenuItemListener
 	 */
 
-	public abstract void fireMenuItemExecuted(int index, String[] paths);
-
 	public abstract String[] getHelpItemsForMenus(String[] files);
 
 	public abstract String[] getMenuItems(String[] paths);
@@ -69,29 +67,23 @@ public abstract class ContextMenuControl extends ContextMenuControlBase {
 		NativityMessage message = new NativityMessage(
 			Constants.SET_MENU_TITLE, title);
 
-		pluginControl.sendMessage(message);
+		_pluginControl.sendMessage(message);
 	}
 
 	/**
 	 * @return
 	 */
 	protected ContextMenuControlBase createAppleContextMenuControlBase() {
-		return new AppleContextMenuControlImpl(pluginControl) {
+		return new AppleContextMenuControlImpl(_pluginControl) {
 
 			@Override
 			public String[] getMenuItems(String[] paths) {
-
-				// TODO Auto-generated method stub
-
 				return ContextMenuControl.this.getMenuItems(paths);
 			}
 
 			@Override
 			public void onExecuteMenuItem(
 				int menuIndex, String menuText, String[] paths) {
-
-				// TODO Auto-generated method stub
-
 				ContextMenuControl.this.onExecuteMenuItem(
 					menuIndex, menuText, paths);
 			}
@@ -107,7 +99,7 @@ public abstract class ContextMenuControl extends ContextMenuControlBase {
 	 * @return
 	 */
 	protected ContextMenuControlBase createWindowsContextMenuControlBase() {
-		return new WindowsContextMenuControlImpl(pluginControl) {
+		return new WindowsContextMenuControlImpl(_pluginControl) {
 
 			@Override
 			public String[] getMenuItems(String[] paths) {
@@ -131,5 +123,6 @@ public abstract class ContextMenuControl extends ContextMenuControlBase {
 	}
 
 	private ContextMenuControlBase _contextMenuControlBaseDelegate;
+	private NativityPluginControl _pluginControl;
 
 }

@@ -28,8 +28,6 @@ import java.net.Socket;
 
 import java.nio.charset.Charset;
 
-import java.util.List;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -97,21 +95,19 @@ public class MessageProcessor implements Runnable {
 			NativityMessage message = jsonDeserializer.deserialize(
 				receivedMessage, NativityMessage.class);
 
-			List<NativityMessage> results = _plugIn.fireMessageListener(
+			NativityMessage responseMessage = _plugIn.fireMessageListener(
 				message);
 
-			for (NativityMessage result : results) {
-				if (result == null) {
-					_returnEmpty();
-				}
-				else {
-					String response =
-						_jsonSerializer.exclude("*.class")
-							.deepSerialize(result);
+			if (responseMessage == null) {
+				_returnEmpty();
+			}
+			else {
+				String response =
+					_jsonSerializer.exclude("*.class")
+						.deepSerialize(responseMessage);
 
-					_outputStreamWriter.write(response);
-					_outputStreamWriter.write("\0");
-				}
+				_outputStreamWriter.write(response);
+				_outputStreamWriter.write("\0");
 			}
 		}
 		catch (IOException e) {

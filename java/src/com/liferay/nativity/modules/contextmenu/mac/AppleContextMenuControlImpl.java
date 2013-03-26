@@ -20,8 +20,6 @@ import com.liferay.nativity.plugincontrol.NativityMessage;
 import com.liferay.nativity.plugincontrol.NativityPluginControl;
 import com.liferay.nativity.plugincontrol.mac.MessageListener;
 
-import flexjson.JSONSerializer;
-
 import java.util.List;
 import java.util.Map;
 
@@ -34,41 +32,46 @@ public abstract class AppleContextMenuControlImpl
 	public AppleContextMenuControlImpl(NativityPluginControl pluginControl) {
 		super(pluginControl);
 
-		MessageListener messageListener = new MessageListener() {
+		MessageListener menuQueryMessageListener = new MessageListener(
+			Constants.MENU_QUERY) {
+
 			@Override
 			public NativityMessage onMessageReceived(NativityMessage message) {
-				String command = message.getCommand();
+				_currentFiles = (List<String>)message.getValue();
 
-				if (command.equals(Constants.MENU_QUERY)) {
-					_currentFiles = (List<String>)message.getValue();
+				String[] currentFilesArray =
+					(String[])_currentFiles.toArray(
+						new String[_currentFiles.size()]);
 
-					String[] currentFilesArray =
-						(String[])_currentFiles.toArray(
-							new String[_currentFiles.size()]);
+				String[] items = getMenuItems(currentFilesArray);
 
-					String[] items = getMenuItems(currentFilesArray);
+				return new NativityMessage(Constants.MENU_ITEMS, items);
+			}
+		};
 
-					return new NativityMessage(Constants.MENU_ITEMS, items);
-				}
-				else if (command.equals(Constants.MENU_EXEC)) {
-					Map<String, Object> args =
-						(Map<String, Object>)message.getValue();
+		pluginControl.registerMessageListener(menuQueryMessageListener);
 
-					int menuIndex = (Integer)args.get(Constants.MENU_INDEX);
-					String menuText = (String)args.get(Constants.MENU_TEXT);
+		MessageListener menuExecMessageListener = new MessageListener(
+			Constants.MENU_EXEC) {
+			@Override
+			public NativityMessage onMessageReceived(NativityMessage message) {
+				Map<String, Object> args =
+					(Map<String, Object>)message.getValue();
 
-					String[] currentFiles =
-						(String[])_currentFiles.toArray(
-							new String[_currentFiles.size()]);
+				int menuIndex = (Integer)args.get(Constants.MENU_INDEX);
+				String menuText = (String)args.get(Constants.MENU_TEXT);
 
-					onExecuteMenuItem(menuIndex, menuText, currentFiles);
-				}
+				String[] currentFiles =
+					(String[])_currentFiles.toArray(
+						new String[_currentFiles.size()]);
+
+				onExecuteMenuItem(menuIndex, menuText, currentFiles);
 
 				return null;
 			}
 		};
 
-		pluginControl.addMessageListener(messageListener);
+		pluginControl.registerMessageListener(menuExecMessageListener);
 	}
 
 	@Override
@@ -79,7 +82,6 @@ public abstract class AppleContextMenuControlImpl
 		pluginControl.sendMessage(message);
 	}
 
-	private static JSONSerializer _jsonSerializer = new JSONSerializer();
 	private List<String> _currentFiles;
 
 }

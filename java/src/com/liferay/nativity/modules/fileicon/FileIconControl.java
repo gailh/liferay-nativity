@@ -24,10 +24,10 @@ import java.util.Map;
 /**
  * @author Dennis Ju
  */
-public abstract class FileIconControl extends FileIconControlBase {
+public abstract class FileIconControl {
 
 	public FileIconControl(NativityPluginControl pluginControl) {
-		super(pluginControl);
+		_pluginControl = pluginControl;
 
 		if (_fileIconControlBaseDelegate == null) {
 			if (OSDetector.isApple()) {
@@ -40,68 +40,56 @@ public abstract class FileIconControl extends FileIconControlBase {
 		}
 	}
 
-	@Override
 	public void disableFileIcons() {
 		_fileIconControlBaseDelegate.disableFileIcons();
 	}
 
-	@Override
 	public void enableFileIcons() {
 		_fileIconControlBaseDelegate.enableFileIcons();
 	}
 
 	// Windows only
 
-	@Override
 	public abstract int getIconForFile(String path);
 
-	@Override
 	public int registerIcon(String path) {
 		return _fileIconControlBaseDelegate.registerIcon(path);
 	}
 
-	@Override
 	public void removeAllFileIcons() {
 		_fileIconControlBaseDelegate.removeAllFileIcons();
 	}
 
-	@Override
 	public void removeFileIcon(String fileName) {
 		_fileIconControlBaseDelegate.removeFileIcon(fileName);
 	}
 
-	@Override
 	public void removeFileIcons(String[] fileNames) {
 		_fileIconControlBaseDelegate.removeFileIcons(fileNames);
 	}
 
-	@Override
 	public void setIconForFile(String fileName, int iconId) {
 		_fileIconControlBaseDelegate.setIconForFile(fileName, iconId);
 	}
 
-	@Override
 	public void setIconsForFiles(Map<String, Integer> fileIconsMap) {
 		_fileIconControlBaseDelegate.setIconsForFiles(fileIconsMap);
 	}
 
-	@Override
 	public void setRootFolder(String folder) {
 		_fileIconControlBaseDelegate.setRootFolder(folder);
 	}
 
-	@Override
 	public void setSystemFolder(String folder) {
 		_fileIconControlBaseDelegate.setSystemFolder(folder);
 	}
 
-	@Override
 	public void unregisterIcon(int id) {
 		_fileIconControlBaseDelegate.unregisterIcon(id);
 	}
 
 	protected FileIconControlBase createAppleFileIconControlBase() {
-		return new AppleFileIconControlImpl(pluginControl) {
+		return new AppleFileIconControlImpl(_pluginControl) {
 			@Override
 			public int getIconForFile(String path) {
 				return FileIconControl.this.getIconForFile(path);
@@ -110,7 +98,7 @@ public abstract class FileIconControl extends FileIconControlBase {
 	}
 
 	protected FileIconControlBase createWindowsFileIconControlBase() {
-		return new WindowsFileIconControlImpl(pluginControl) {
+		return new WindowsFileIconControlImpl(_pluginControl) {
 			@Override
 			public int getIconForFile(String path) {
 				return FileIconControl.this.getIconForFile(path);
@@ -119,5 +107,6 @@ public abstract class FileIconControl extends FileIconControlBase {
 	}
 
 	private FileIconControlBase _fileIconControlBaseDelegate;
+	private NativityPluginControl _pluginControl;
 
 }
