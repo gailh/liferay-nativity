@@ -32,8 +32,6 @@ import java.lang.reflect.Type;
 
 import java.net.Socket;
 
-import java.util.List;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 //import com.liferay.nativity.modules.contextmenu.MenuItemListener;
@@ -231,13 +229,12 @@ public class AppleNativityPluginControlImpl extends NativityPluginControl {
 				NativityMessage message = _messageJSONDeserializer.deserialize(
 					data, NativityMessage.class);
 
-				List<NativityMessage> results = fireMessageListener(message);
+				NativityMessage responseMessage = fireMessageListener(message);
 
-				for (NativityMessage result : results) {
-					_callbackOutputStream.writeBytes(
-						_jsonSerializer.exclude("*.class")
-							.deepSerialize(result) + "\r\n");
-				}
+				String response = _jsonSerializer.exclude("*.class")
+					.deepSerialize(responseMessage) + "\r\n";
+
+				_callbackOutputStream.writeBytes(response);
 			}
 			catch (IOException ioe) {
 				_logger.error(ioe.getMessage(), ioe);

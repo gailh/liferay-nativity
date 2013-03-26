@@ -21,7 +21,17 @@ import com.liferay.nativity.plugincontrol.NativityMessage;
  */
 public abstract class MessageListener {
 
+	public MessageListener(String command) {
+		_command = command;
+	}
+
+	public String getCommand() {
+		return _command;
+	}
+
 	public abstract NativityMessage onMessageReceived(
 		NativityMessage nativityMessage);
+
+	private String _command;
 
 }

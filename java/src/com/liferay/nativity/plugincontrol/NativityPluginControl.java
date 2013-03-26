@@ -19,8 +19,8 @@ import com.liferay.nativity.modules.fileicon.FileIconControl;
 import com.liferay.nativity.plugincontrol.mac.MessageListener;
 import com.liferay.nativity.plugincontrol.win.PluginException;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author Dennis Ju
@@ -28,28 +28,21 @@ import java.util.List;
 public abstract class NativityPluginControl {
 
 	public NativityPluginControl() {
-		_messageListeners = new ArrayList<MessageListener>();
-	}
-
-	public void addMessageListener(MessageListener messageListener) {
-		_messageListeners.add(messageListener);
+		_commandMap = new HashMap<String, MessageListener>();
 	}
 
 	public abstract void connect() throws PluginException;
 
 	public abstract void disconnect();
 
-	public List<NativityMessage> fireMessageListener(NativityMessage message) {
-		List<NativityMessage> responses = new ArrayList<NativityMessage>();
+	public NativityMessage fireMessageListener(NativityMessage message) {
+		MessageListener messageListener = _commandMap.get(message.getCommand());
 
-		for (MessageListener messageListener : _messageListeners) {
-			NativityMessage responseMessage = messageListener.onMessageReceived(
-				message);
+		return messageListener.onMessageReceived(message);
+	}
 
-			responses.add(responseMessage);
-		}
-
-		return responses;
+	public void registerMessageListener(MessageListener messageListener) {
+		_commandMap.put(messageListener.getCommand(), messageListener);
 	}
 
 	public abstract boolean running();
@@ -62,6 +55,6 @@ public abstract class NativityPluginControl {
 
 	protected FileIconControl fileIconControl;
 
-	private List<MessageListener> _messageListeners;
+	private Map<String, MessageListener> _commandMap;
 
 }

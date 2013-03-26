@@ -31,29 +31,28 @@ public abstract class WindowsFileIconControlImpl extends FileIconControlBase {
 	public WindowsFileIconControlImpl(NativityPluginControl pluginControl) {
 		super(pluginControl);
 
-		MessageListener messageListener = new MessageListener() {
+		MessageListener getFileOverlayIdMessageListener = new MessageListener(
+			Constants.GET_FILE_OVERLAY_ID) {
+
 			@Override
 			public NativityMessage onMessageReceived(NativityMessage message) {
-				if (message.getCommand().equals(
-						Constants.GET_FILE_OVERLAY_ID)) {
+				List<String> args = (List<String>)message.getValue();
 
-					List<String> args = (List<String>)message.getValue();
+				if (args.size() > 0) {
+					String arg1 = args.get(0);
 
-					if (args.size() > 0) {
-						String arg1 = args.get(0);
+					int icon = getIconForFile(arg1);
 
-						int icon = getIconForFile(arg1);
-
-						return new NativityMessage(
-							Constants.GET_FILE_OVERLAY_ID, icon);
-					}
+					return new NativityMessage(
+						Constants.GET_FILE_OVERLAY_ID, icon);
 				}
-
-				return null;
+				else {
+					return null;
+				}
 			}
 		};
 
-		pluginControl.addMessageListener(messageListener);
+		pluginControl.registerMessageListener(getFileOverlayIdMessageListener);
 	}
 
 	@Override
