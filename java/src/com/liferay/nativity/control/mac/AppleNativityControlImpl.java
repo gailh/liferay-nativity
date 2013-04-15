@@ -17,7 +17,6 @@ package com.liferay.nativity.control.mac;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import com.liferay.nativity.Constants;
 import com.liferay.nativity.control.NativityControl;
 import com.liferay.nativity.control.NativityMessage;
 import com.liferay.nativity.listeners.SocketCloseListener;
@@ -141,14 +140,6 @@ public class AppleNativityControlImpl extends NativityControl {
 
 			return "";
 		}
-	}
-
-	@Override
-	public void setRootFolder(String folder) {
-		NativityMessage message = new NativityMessage(
-			Constants.SET_ROOT_FOLDER, folder);
-
-		sendMessage(message);
 	}
 
 	@Override

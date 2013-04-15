@@ -18,15 +18,17 @@ import com.liferay.nativity.Constants;
 import com.liferay.nativity.control.MessageListener;
 import com.liferay.nativity.control.NativityControl;
 import com.liferay.nativity.control.NativityMessage;
-import com.liferay.nativity.modules.contextmenu.ContextMenuControlBase;
+import com.liferay.nativity.modules.contextmenu.ContextMenuControl;
 import com.liferay.nativity.modules.contextmenu.ContextMenuControlCallback;
+import com.liferay.nativity.modules.contextmenu.model.ContextMenuItem;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author Dennis Ju
  */
-public class AppleContextMenuControlImpl extends ContextMenuControlBase {
+public class AppleContextMenuControlImpl extends ContextMenuControl {
 
 	public AppleContextMenuControlImpl(
 		NativityControl nativityControl,
@@ -45,7 +47,7 @@ public class AppleContextMenuControlImpl extends ContextMenuControlBase {
 					(String[])_currentFiles.toArray(
 						new String[_currentFiles.size()]);
 
-				String[] items = getMenuItems(currentFilesArray);
+				List<ContextMenuItem> items = getMenuItem(currentFilesArray);
 
 				return new NativityMessage(Constants.MENU_ITEMS, items);
 			}
@@ -58,27 +60,23 @@ public class AppleContextMenuControlImpl extends ContextMenuControlBase {
 
 			@Override
 			public NativityMessage onMessage(NativityMessage message) {
-				String menuText = (String)message.getValue();
+				Map<String, Object> value =
+					(Map<String, Object>)message.getValue();
+
+				String menuText = (String)value.get("title");
+				Integer id = (Integer)value.get("id");
 
 				String[] currentFiles =
 					(String[])_currentFiles.toArray(
 						new String[_currentFiles.size()]);
 
-				fireMenuItemListeners(menuText, currentFiles);
+				fireAction(id, menuText, currentFiles);
 
 				return null;
 			}
 		};
 
 		nativityControl.registerMessageListener(menuExecMessageListener);
-	}
-
-	@Override
-	public void setContextMenuTitle(String title) {
-		NativityMessage message = new NativityMessage(
-			Constants.SET_MENU_TITLE, title);
-
-		nativityControl.sendMessage(message);
 	}
 
 	private List<String> _currentFiles;

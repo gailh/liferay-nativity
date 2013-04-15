@@ -117,6 +117,14 @@ public class WindowsFileIconControlImpl extends FileIconControlBase {
 	}
 
 	@Override
+	public void setFilterPath(String folder) {
+		NativityMessage message = new NativityMessage(
+			Constants.SET_ROOT_FOLDER, folder);
+
+		nativityControl.sendMessage(message);
+	}
+
+	@Override
 	public void unregisterIcon(int id) {
 		return;
 	}

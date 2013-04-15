@@ -21,10 +21,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.liferay.nativity.control.NativityControl;
 import com.liferay.nativity.control.NativityControlFactory;
 import com.liferay.nativity.control.NativityMessage;
-import com.liferay.nativity.modules.contextmenu.ContextMenuControl;
-import com.liferay.nativity.modules.contextmenu.ContextMenuControlFactory;
+import com.liferay.nativity.modules.contextmenu.ContextMenuControlUtil;
 import com.liferay.nativity.modules.fileicon.FileIconControl;
-import com.liferay.nativity.modules.fileicon.FileIconControlFactory;
+import com.liferay.nativity.modules.fileicon.FileIconControlUtil;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -68,11 +67,10 @@ public class TestDriver {
 			NativityControlFactory.getNativityControl();
 
 		FileIconControl fileIconControl =
-			FileIconControlFactory.getFileIconControl(
+			FileIconControlUtil.getFileIconControl(
 				nativityControl, new TestFileIconControlCallback());
 
-		ContextMenuControl contextMenuControl =
-			ContextMenuControlFactory.getContextMenuControl(
+		ContextMenuControlUtil.registerContextMenuControlCallback(
 			nativityControl, new TestContextMenuControlCallback());
 
 		BufferedReader bufferedReader = new BufferedReader(
@@ -95,11 +93,8 @@ public class TestDriver {
 				_logger.debug("_registerFileIcon");
 				_registerFileIcon(fileIconControl);
 
-				_logger.debug("_setMenuTitle");
-				_setMenuTitle(contextMenuControl);
-
-				_logger.debug("_setRootFolder");
-				_setRootFolder(nativityControl);
+				_logger.debug("_setFilterPath");
+				_setFilterPath(fileIconControl);
 
 				_logger.debug("_setSystemFolder");
 				_setSystemFolder(nativityControl);
@@ -182,19 +177,8 @@ public class TestDriver {
 		}
 	}
 
-	private static void _setMenuTitle(ContextMenuControl contextMenuControl) {
-		contextMenuControl.setContextMenuTitle("Test");
-
-		try {
-			Thread.sleep(_waitTime);
-		}
-		catch (InterruptedException e) {
-			_logger.error(e.getMessage(), e);
-		}
-	}
-
-	private static void _setRootFolder(NativityControl nativityControl) {
-		nativityControl.setRootFolder(_testRootFolder);
+	private static void _setFilterPath(FileIconControl fileIconControl) {
+		fileIconControl.setFilterPath(_testRootFolder);
 
 		try {
 			Thread.sleep(_waitTime);

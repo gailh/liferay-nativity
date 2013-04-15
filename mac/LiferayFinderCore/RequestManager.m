@@ -31,7 +31,7 @@
 		callbackSocket = nil;
 		callbackCondition = nil;
 		callbackMsg = nil;
-        rootFolder = nil;
+		rootFolder = nil;
 
 		numberFormatter = [[NSNumberFormatter alloc] init];
 		[numberFormatter setNumberStyle:NSNumberFormatterDecimalStyle];
@@ -60,7 +60,7 @@
 
 - (void)execCommand:(NSData*)data replyTo:(AsyncSocket*)sock
 {
-    NSDictionary* jsonDictionary = [data objectFromJSONData];
+	NSDictionary* jsonDictionary = [data objectFromJSONData];
 
 	NSString* command = [jsonDictionary objectForKey:@"command"];
 	NSData* value = [jsonDictionary objectForKey:@"value"];
@@ -97,7 +97,7 @@
 	{
 		[self execSetMenuTitleCmd:value replyTo:sock];
 	}
-    else if ([command isEqualToString:@"setRootFolder"])
+	else if ([command isEqualToString:@"setRootFolder"])
 	{
 		[self execSetRootFolderCmd:value replyTo:sock];
 	}
@@ -118,9 +118,10 @@
 
 	NSNumber* index = [[IconCache sharedInstance] registerIcon:path];
 
-    if (!index) {
-        index = [NSNumber numberWithInt:-1];
-    }
+	if (!index)
+	{
+		index = [NSNumber numberWithInt:-1];
+	}
 
 	[self replyString:[numberFormatter stringFromNumber:index] toSocket:sock];
 }
@@ -161,8 +162,8 @@
 
 - (void)execSetRootFolderCmd:(NSData*)cmdData replyTo:(AsyncSocket*)sock
 {
-    rootFolder = (NSString*)cmdData;
-    [rootFolder retain];
+	rootFolder = (NSString*)cmdData;
+	[rootFolder retain];
 
 	[self replyString:@"1" toSocket:sock];
 }
@@ -176,7 +177,7 @@
 	[self replyString:@"1" toSocket:sock];
 }
 
-- (void)menuItemClicked:(NSNumber*)item withTitle:(NSString*)title
+- (void)menuItemClicked:(NSNumber*)menuItemId withTitle:(NSString*)title
 {
 	if (callbackSocket == nil)
 	{
@@ -186,7 +187,13 @@
 	NSDictionary* menuExecDictionary = [[NSMutableDictionary alloc] init];
 
 	[menuExecDictionary setValue:@"menuExec" forKey:@"command"];
-	[menuExecDictionary setValue:title forKey:@"value"];
+
+	NSDictionary* valueDictionary = [[NSMutableDictionary alloc] init];
+
+	[valueDictionary setValue:title forKey:@"title"];
+	[valueDictionary setValue:menuItemId forKey:@"id"];
+
+	[menuExecDictionary setValue:valueDictionary forKey:@"value"];
 
 	NSString* jsonString = [menuExecDictionary JSONString];
 
@@ -203,15 +210,15 @@
 		return nil;
 	}
 
-    if (rootFolder)
-    {
-        NSString* file = [files objectAtIndex:0];
+	if (rootFolder)
+	{
+		NSString* file = [files objectAtIndex:0];
 
-        if (![file hasPrefix:rootFolder])
-        {
-            return nil;
-        }
-    }
+		if (![file hasPrefix:rootFolder])
+		{
+			return nil;
+		}
+	}
 
 	NSDictionary* menuQueryDictionary = [[NSMutableDictionary alloc] init];
 
@@ -233,12 +240,13 @@
 	{
 		[runLoop runMode:NSDefaultRunLoopMode beforeDate:[NSDate distantFuture]];
 
-		if (callbackSocket == nil) {
+		if (callbackSocket == nil)
+		{
 			return nil;
 		}
 	}
 
-    NSDictionary* responseDictionary = [callbackMsg objectFromJSONString];
+	NSDictionary* responseDictionary = [callbackMsg objectFromJSONString];
 
 	return (NSArray*)[responseDictionary objectForKey:@"value"];
 }

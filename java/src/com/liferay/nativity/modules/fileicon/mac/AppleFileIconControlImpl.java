@@ -62,7 +62,7 @@ public class AppleFileIconControlImpl extends FileIconControlBase {
 
 		String reply = nativityControl.sendMessage(message);
 
-		if (reply == null) {
+		if ((reply == null) || reply.isEmpty()) {
 			return -1;
 		}
 
@@ -126,6 +126,14 @@ public class AppleFileIconControlImpl extends FileIconControlBase {
 
 			nativityControl.sendMessage(message);
 		}
+	}
+
+	@Override
+	public void setFilterPath(String folder) {
+		NativityMessage message = new NativityMessage(
+			Constants.SET_ROOT_FOLDER, folder);
+
+		nativityControl.sendMessage(message);
 	}
 
 	@Override

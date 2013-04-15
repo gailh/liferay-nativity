@@ -18,15 +18,16 @@ import com.liferay.nativity.Constants;
 import com.liferay.nativity.control.MessageListener;
 import com.liferay.nativity.control.NativityControl;
 import com.liferay.nativity.control.NativityMessage;
-import com.liferay.nativity.modules.contextmenu.ContextMenuControlBase;
+import com.liferay.nativity.modules.contextmenu.ContextMenuControl;
 import com.liferay.nativity.modules.contextmenu.ContextMenuControlCallback;
+import com.liferay.nativity.modules.contextmenu.model.ContextMenuItem;
 
 import java.util.List;
 
 /**
  * @author Dennis Ju
  */
-public class WindowsContextMenuControlImpl extends ContextMenuControlBase {
+public class WindowsContextMenuControlImpl extends ContextMenuControl {
 
 	public WindowsContextMenuControlImpl(
 		NativityControl nativityControl,
@@ -42,7 +43,7 @@ public class WindowsContextMenuControlImpl extends ContextMenuControlBase {
 				@SuppressWarnings("unchecked")
 				List<String> args = (List<String>)message.getValue();
 
-				String[] menuItems = getMenuItems(
+				List<ContextMenuItem> menuItems = getMenuItem(
 					args.toArray(new String[args.size()]));
 
 				return new NativityMessage(Constants.GET_MENU_LIST, menuItems);
@@ -50,23 +51,6 @@ public class WindowsContextMenuControlImpl extends ContextMenuControlBase {
 		};
 
 		nativityControl.registerMessageListener(getMenuListMessageListener);
-
-		MessageListener getHelpItemsMessageListener = new MessageListener(
-			Constants.GET_HELP_ITEMS) {
-
-			@Override
-			public NativityMessage onMessage(NativityMessage message) {
-				@SuppressWarnings("unchecked")
-				List<String> args = (List<String>)message.getValue();
-
-				String[] helpItems = getHelpItemsForMenus(
-					args.toArray(new String[args.size()]));
-
-				return new NativityMessage(Constants.GET_HELP_ITEMS, helpItems);
-			}
-		};
-
-		nativityControl.registerMessageListener(getHelpItemsMessageListener);
 
 		MessageListener performActionMessageListener = new MessageListener(
 			Constants.PERFORM_ACTION) {
@@ -77,22 +61,16 @@ public class WindowsContextMenuControlImpl extends ContextMenuControlBase {
 
 				String title = args.remove(0);
 
-				fireMenuItemListeners(
-					title, args.toArray(new String[args.size()]));
+				//TODO get real id here
+				int id = 0;
+
+				fireAction(id, title, args.toArray(new String[args.size()]));
 
 				return null;
 			}
 		};
 
 		nativityControl.registerMessageListener(performActionMessageListener);
-	}
-
-	@Override
-	public void setContextMenuTitle(String title) {
-		NativityMessage message = new NativityMessage(
-			Constants.SET_MENU_TITLE, title);
-
-		nativityControl.sendMessage(message);
 	}
 
 }
